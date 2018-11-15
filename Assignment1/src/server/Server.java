@@ -16,7 +16,7 @@ public class Server {
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException {
         Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
 
-        BufferedReader br = new BufferedReader(new FileReader("/Users/rafalpytel/Downloads/IN4150-master/Assignment1/tests/clients.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/clients.txt"));
         String line = "";
         while ((line = br.readLine()) != null) {
             registry.bind(line, new RemoteEntityImpl());
@@ -34,9 +34,10 @@ public class Server {
             RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
         }
         for(int i=0; i<RMI_IDS.length; i++){
-            RMI_IDS[i].setEnities(RMI_IDS);
+            RMI_IDS[i].setEntities(RMI_IDS);
             RMI_IDS[i].setName(registry.list()[i]);
             RMI_IDS[i].setId(i+1);
+            RMI_IDS[i].setVectorClock(i+1,RMI_IDS.length);
         }
 
     }
