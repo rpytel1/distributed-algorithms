@@ -3,21 +3,22 @@ package util;
 import message.Message;
 
 import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public interface IRemoteEntity extends Remote {
-    public void receive(Message m);
-    public void sendMessage();
-    public void deliver(Message m);
-    public void setVectorClock(int id, int l);
-    public void setEntities(IRemoteEntity[] enities);
-    public void setRuns(int i);
-    public AtomicInteger getRuns();
-    public void setName(String name);
-    public String getName();
-    public void setId(int id);
-    public int getId();
-    public void addMessage(Message m);
-    public void addMessageToBeSent(int i, Message m);
+    public void receive(Message m) throws RemoteException;
+    public void sendMessage() throws RemoteException;
+    public void deliver(Message m) throws RemoteException;
+    public void setVectorClock(int id, int l) throws RemoteException;
+    public void setEntities(IRemoteEntity[] enities) throws RemoteException;
+    public void setRuns(int i) throws RemoteException;
+    public AtomicInteger getRuns() throws RemoteException;
+    public void setName(String name) throws RemoteException;
+    public String getName() throws RemoteException;
+    public void setId(int id) throws RemoteException;
+    public int getId() throws RemoteException;
+    public void addMessage(Message m) throws RemoteException;
+    public void addMessageToBeSent(int i, Message m) throws RemoteException;
 }

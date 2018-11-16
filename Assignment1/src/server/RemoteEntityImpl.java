@@ -31,7 +31,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     }
 
     @Override
-    public void receive(Message m) {
+    public void receive(Message m) throws RemoteException{
         Buffer receivedBuffer = m.getBuffer();
         int receiver = m.getReceiver();
 
@@ -51,7 +51,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     }
 
     @Override
-    public void sendMessage() {
+    public void sendMessage() throws RemoteException{
     	if (this.toBeSent.get(0)!= null){
 	    	Message m = this.toBeSent.get(0);
 	        this.vt.incTimeVector(id);
@@ -62,7 +62,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     }
 
     @Override
-    public void deliver(Message m) {
+    public void deliver(Message m) throws RemoteException{
         System.out.println("Message " + m.getText() + "has been delivered to " + m.getReceiver());
         this.vt.incTimeVector(m.getSender());
         msgBuffer.poll();
@@ -77,53 +77,53 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     }
 
     @Override
-    public void setVectorClock(int i, int l) {
+    public void setVectorClock(int i, int l) throws RemoteException{
         this.vt = new VectorClock(i, l);
     }
 
     @Override
-    public void setEntities(IRemoteEntity[] entities) {
+    public void setEntities(IRemoteEntity[] entities) throws RemoteException{
         this.RD = entities;
     }
     
     @Override
-    public void setRuns(int i) {
+    public void setRuns(int i) throws RemoteException{
         this.runs = new AtomicInteger(i);
     }
     
     @Override
-    public AtomicInteger getRuns() {
+    public AtomicInteger getRuns() throws RemoteException{
         return this.runs;
     }
 
     @Override
-    public void setName(String name) {
+    public void setName(String name) throws RemoteException{
         this.name = name;
     }
 
     @Override
-    public String getName() {
+    public String getName() throws RemoteException{
         // TODO Auto-generated method stub
         return name;
     }
 
     @Override
-    public void setId(int id) {
+    public void setId(int id) throws RemoteException{
         this.id = id;
     }
 
     @Override
-    public int getId() {
+    public int getId() throws RemoteException{
         return id;
     }
 
     @Override
-    public void addMessage(Message m) {
+    public void addMessage(Message m) throws RemoteException{
         this.msgBuffer.add(m);
     }
     
     @Override
-    public void addMessageToBeSent(int i, Message m) {
+    public void addMessageToBeSent(int i, Message m) throws RemoteException{
         this.toBeSent.add(i, m);
     }
 }

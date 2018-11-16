@@ -33,6 +33,7 @@ public class Client {
 			String msgText = split_line[1];
 			VectorClock vt = new VectorClock(registry.list().length,Integer.parseInt(split_line[0]));
 			int sender = Integer.parseInt(split_line[0]);
+			System.out.println(sender);
 			int receiver = Integer.parseInt(split_line[2]);
 			temp = new Message(msgText,vt,new Buffer(), sender, receiver);
 			runs.add(sender, new AtomicInteger(runs.get(sender).getAndIncrement()));
