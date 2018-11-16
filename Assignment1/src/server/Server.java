@@ -36,8 +36,8 @@ public class Server {
         for(int i=0; i<RMI_IDS.length; i++){
             RMI_IDS[i].setEntities(RMI_IDS);
             RMI_IDS[i].setName(registry.list()[i]);
-            RMI_IDS[i].setId(i+1);
-            RMI_IDS[i].setVectorClock(i+1,RMI_IDS.length);
+            RMI_IDS[i].setId(i);
+            RMI_IDS[i].setVectorClock(i,RMI_IDS.length);
         }
 
     }
