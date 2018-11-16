@@ -5,7 +5,7 @@ public class MessageBuffer {
 	public PriorityQueue<Message> msgQueue;
 	
 	public MessageBuffer(){
-		msgQueue = new PriorityQueue<Message>(100, new MessageComparator());
+		msgQueue = new PriorityQueue<>(100, new MessageComparator());
 	}
 	
 	public Message peek(){
