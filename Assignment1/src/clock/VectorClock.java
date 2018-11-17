@@ -1,15 +1,21 @@
 package clock;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class VectorClock {
+public class VectorClock implements Serializable {
 
     List<Integer> timeVector;
     int processID;
+    private static final long serialVersionUID = 1L;
 
-    public VectorClock(int n, int id) {
+    public VectorClock() {
+
+    }
+
+    public VectorClock(int id, int n) {
         timeVector = new ArrayList<>(Collections.nCopies(n, 0));
         processID = id;
     }
@@ -19,12 +25,20 @@ public class VectorClock {
         processID = id;
     }
 
-    public List<Integer> getVector() {
+    public List<Integer> getTimeVector() {
         return this.timeVector;
     }
 
-    public int getID() {
-        return this.processID;
+    public void setTimeVector(List<Integer> timeVector) {
+        this.timeVector = timeVector;
+    }
+
+    public int getProcessID() {
+        return processID;
+    }
+
+    public void setProcessID(int processID) {
+        this.processID = processID;
     }
 
     public int size() {
@@ -42,7 +56,7 @@ public class VectorClock {
 
         for (int i = 0; i < this.timeVector.size(); i++) {
             Integer myTime = this.timeVector.get(i);
-            Integer receivedTime = vc2.getVector().get(i);
+            Integer receivedTime = vc2.getTimeVector().get(i);
 
             if (myTime < receivedTime) {
                 this.timeVector.add(i, receivedTime);
@@ -61,7 +75,7 @@ public class VectorClock {
         boolean smallerOrEqual = true;
         for (int i = 0; i < this.timeVector.size(); i++) {
             Integer myTime = this.timeVector.get(i);
-            Integer receivedTime = vc2.getVector().get(i);
+            Integer receivedTime = vc2.getTimeVector().get(i);
 
             if (myTime > receivedTime) {
                 smallerOrEqual = false;
@@ -81,4 +95,6 @@ public class VectorClock {
         }
         return str;
     }
+
+
 }

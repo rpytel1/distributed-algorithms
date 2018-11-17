@@ -11,7 +11,7 @@ public interface IRemoteEntity extends Remote {
     public void receive(Message m) throws RemoteException;
     public void sendMessage() throws RemoteException;
     public void deliver(Message m) throws RemoteException;
-    public void setVectorClock(int id, int l) throws RemoteException;
+    public void setVectorClock(int i, int id) throws RemoteException;
     public void setEntities(IRemoteEntity[] enities) throws RemoteException;
     public void setRuns(int i) throws RemoteException;
     public AtomicInteger getRuns() throws RemoteException;

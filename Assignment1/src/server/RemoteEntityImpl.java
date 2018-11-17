@@ -33,17 +33,19 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     @Override
     public void receive(Message m) throws RemoteException{
         Buffer receivedBuffer = m.getBuffer();
-        int receiver = m.getReceiver();
+        int receiver = m.getReceiverID();
 
         if (!receivedBuffer.contains(receiver) || (m.getBuffer().contains(receiver)
                 && receivedBuffer.get(receiver).smallerOrEqualThan(vt))) {
             deliver(m);
 
             Message message = msgBuffer.peek();
-            while (!message.getBuffer().contains(message.getReceiver()) || (message.getBuffer().contains(message.getReceiver())
-                    && message.getBuffer().get(message.getReceiver()).smallerOrEqualThan(vt))) {
-                deliver(msgBuffer.peek());
-                message = msgBuffer.peek();
+            if(message!=null) {
+                while (!message.getBuffer().contains(message.getReceiverID()) || (message.getBuffer().contains(message.getReceiverID())
+                        && message.getBuffer().get(message.getReceiverID()).smallerOrEqualThan(vt))) {
+                    deliver(msgBuffer.peek());
+                    message = msgBuffer.peek();
+                }
             }
         } else {
             msgBuffer.add(m);
@@ -55,16 +57,16 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     	if (this.toBeSent.get(0)!= null){
 	    	Message m = this.toBeSent.get(0);
 	        this.vt.incTimeVector(id);
-	        RD[m.getReceiver()].receive(m);
-	        S.put(m.getReceiver(), vt);
+	        RD[m.getReceiverID()].receive(m);
+	        S.put(m.getReceiverID(), vt);
 	        this.toBeSent.remove(0);
     	}
     }
 
     @Override
     public void deliver(Message m) throws RemoteException{
-        System.out.println("Message " + m.getText() + "has been delivered to " + m.getReceiver());
-        this.vt.incTimeVector(m.getSender());
+        System.out.println("Message " + m.getText() + "has been delivered to " + m.getReceiverID());
+        this.vt.incTimeVector(m.getSenderID());
         msgBuffer.poll();
         this.runs.decrementAndGet();
 
