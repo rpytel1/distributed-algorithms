@@ -65,7 +65,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 
     @Override
     public void deliver(Message m) throws RemoteException{
-        System.out.println("Message " + m.getText() + "has been delivered to " + m.getReceiverID());
+        System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiverID());
         this.vt.incTimeVector(m.getSenderID());
         msgBuffer.poll();
         this.runs.decrementAndGet();

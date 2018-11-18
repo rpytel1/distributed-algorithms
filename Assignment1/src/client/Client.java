@@ -68,6 +68,7 @@ public class Client {
             for (int j = 0; j < msgNum[i]; j++) {
                 new Thread(() -> {
                     try {
+                        Thread.sleep(3000);
                         Thread.sleep((int) (Math.random() * 500));
                         RDi.sendMessage();
 
