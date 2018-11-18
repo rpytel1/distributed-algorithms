@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
@@ -29,8 +30,8 @@ public class Client {
         Message temp;
         runs = new ArrayList<>();
 
-        for(int i=0;i<registry.list().length;i++){
-         runs.add(new AtomicInteger(0));
+        for (int i = 0; i < registry.list().length; i++) {
+            runs.add(new AtomicInteger(0));
         }
 
         msgNum = new int[registry.list().length];
@@ -65,21 +66,21 @@ public class Client {
 
         for (int i = 0; i < RMI_IDS.length; i++) {
             IRemoteEntity RDi = RMI_IDS[i];
-            for (int j = 0; j < msgNum[i]; j++) {
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(3000);
-                        Thread.sleep((int) (Math.random() * 500));
-                        RDi.sendMessage();
 
-                    } catch (Exception e) {
+            int finalI = i;
+            new Thread(() -> {
+                for (int j = 0; j < msgNum[finalI]; j++) {
+                    try {
+                        RDi.sendMessage();
+                    } catch (RemoteException e) {
                         e.printStackTrace();
                     }
-                }).start();
-            }
+                }
+            }).start();
         }
+
+    }
 		/*while(runs.stream().mapToInt(p->p.get()).sum()!=0){
 			Thread.sleep(1);
 		}*/
-    }
 }

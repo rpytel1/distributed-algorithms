@@ -54,10 +54,19 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 
     @Override
     public void sendMessage() throws RemoteException{
+        System.out.println("Sending message" +vt);
     	if (this.toBeSent.get(0)!= null){
 	    	Message m = this.toBeSent.get(0);
 	        this.vt.incTimeVector(id);
-	        RD[m.getReceiverID()].receive(m);
+            new Thread(() -> {
+                try {
+                    Thread.sleep((int) (Math.random() * 500));
+                    RD[m.getReceiverID()].receive(m);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
+
 	        S.put(m.getReceiverID(), vt);
 	        this.toBeSent.remove(0);
     	}
@@ -65,7 +74,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 
     @Override
     public void deliver(Message m) throws RemoteException{
-        System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiverID());
+        System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiverID()+" time:"+vt);
         this.vt.incTimeVector(m.getSenderID());
         msgBuffer.poll();
         this.runs.decrementAndGet();
