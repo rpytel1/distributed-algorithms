@@ -20,33 +20,34 @@ import util.IRemoteEntity;
 
 public class Client {
     static int msgNum[];
-    static List<AtomicInteger> runs;
+    //static List<AtomicInteger> runs;
+    static int numProc;
 
     public static void main(String[] args) throws NotBoundException, IOException, InterruptedException {
         Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
-        BufferedReader br = new BufferedReader(new FileReader("tests/messages.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/messages1.txt"));
         String line = "";
         Message temp;
-        runs = new ArrayList<>();
+        //runs = new ArrayList<>();
+        numProc = registry.list().length;
 
-        for(int i=0;i<registry.list().length;i++){
+        /*for(int i=0;i<numProc;i++){
          runs.add(new AtomicInteger(0));
-        }
+        }*/
 
-        msgNum = new int[registry.list().length];
-        for (int i = 0; i < msgNum.length; i++) msgNum[i] = 0;
+        msgNum = new int[numProc];
+        for (int i = 0; i < numProc; i++) msgNum[i] = 0;
         while ((line = br.readLine()) != null) {
             String[] split_line = line.split(" ");
             String msgText = split_line[1];
-            VectorClock vt = new VectorClock(registry.list().length, Integer.parseInt(split_line[0]));
             int sender = Integer.parseInt(split_line[0]);
-            System.out.println(sender);
+            VectorClock vt = new VectorClock(sender, numProc);
             int receiver = Integer.parseInt(split_line[2]);
             temp = new Message(msgText, vt, new Buffer(), sender, receiver);
 
-            if (runs.get(sender) != null) {
+            /*if (runs.get(sender) != null) {
                 runs.add(sender, new AtomicInteger(runs.get(sender).getAndIncrement()));
-            }
+            }*/
             msgNum[sender]++;
             ((IRemoteEntity) registry.lookup(registry.list()[sender])).addMessageToBeSent(Integer.parseInt(split_line[3]), temp);
         }
@@ -57,10 +58,10 @@ public class Client {
 
     public static void SchiperEggliSandoz() throws NotBoundException, InterruptedException, IOException {
         Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
-        IRemoteEntity[] RMI_IDS = new IRemoteEntity[registry.list().length];
-        for (int i = 0; i < registry.list().length; i++) {
+        IRemoteEntity[] RMI_IDS = new IRemoteEntity[numProc];
+        for (int i = 0; i < numProc; i++) {
             RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
-            RMI_IDS[i].setRuns(runs.get(i).get());
+            //RMI_IDS[i].setRuns(runs.get(i).get());
         }
 
         for (int i = 0; i < RMI_IDS.length; i++) {

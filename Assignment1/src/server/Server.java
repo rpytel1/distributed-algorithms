@@ -16,7 +16,7 @@ public class Server {
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException {
         Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
 
-        BufferedReader br = new BufferedReader(new FileReader("tests/clients.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/clients1.txt"));
         String line = "";
         while ((line = br.readLine()) != null) {
             registry.bind(line, new RemoteEntityImpl());

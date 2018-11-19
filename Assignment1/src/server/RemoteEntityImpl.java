@@ -21,7 +21,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     private IRemoteEntity[] RD;
     private Buffer S;
     private VectorClock vt;
-    private AtomicInteger runs;
+    //private AtomicInteger runs;
 
     protected RemoteEntityImpl() throws RemoteException {
         super();
@@ -41,22 +41,29 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 
             Message message = msgBuffer.peek();
             if(message!=null) {
-                while (!message.getBuffer().contains(message.getReceiverID()) || (message.getBuffer().contains(message.getReceiverID())
-                        && message.getBuffer().get(message.getReceiverID()).smallerOrEqualThan(vt))) {
-                    deliver(msgBuffer.peek());
+            	receivedBuffer = message.getBuffer();
+            	receiver = message.getReceiverID();
+                while (!receivedBuffer.contains(receiver) || (receivedBuffer.contains(receiver)
+                        && receivedBuffer.get(receiver).smallerOrEqualThan(vt))) {
+                    deliver(message);
                     message = msgBuffer.peek();
+                    if (message == null) break;
+                    receivedBuffer = message.getBuffer();
+                	receiver = message.getReceiverID();
                 }
             }
-        } else {
-            msgBuffer.add(m);
-        }
+        } 
+        else msgBuffer.add(m);
     }
 
     @Override
     public void sendMessage() throws RemoteException{
     	if (this.toBeSent.get(0)!= null){
 	    	Message m = this.toBeSent.get(0);
+	    	System.out.println("Process "+this.id+" sends message "+m.getText()+" to process "+m.getReceiverID());
 	        this.vt.incTimeVector(id);
+	        m.setTimestamp(this.vt);
+	        m.setBuffer(this.S);
 	        RD[m.getReceiverID()].receive(m);
 	        S.put(m.getReceiverID(), vt);
 	        this.toBeSent.remove(0);
@@ -65,15 +72,16 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 
     @Override
     public void deliver(Message m) throws RemoteException{
-        System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiverID());
+        System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiverID() 
+        + " by " + m.getSenderID());
         this.vt.incTimeVector(m.getSenderID());
         msgBuffer.poll();
-        this.runs.decrementAndGet();
+        //this.runs.decrementAndGet();
 
         for (int i = 0; i < RD.length; i++) {
             if (m.getBuffer().contains(i)) {
-                S.put(i, m.getBuffer().get(i));
-                this.runs.decrementAndGet();
+                S.putAndMerge(i, m.getBuffer().get(i));
+                //this.runs.decrementAndGet();
             }
         }
     }
@@ -87,7 +95,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     public void setEntities(IRemoteEntity[] entities) throws RemoteException{
         this.RD = entities;
     }
-    
+    /*
     @Override
     public void setRuns(int i) throws RemoteException{
         this.runs = new AtomicInteger(i);
@@ -96,7 +104,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     @Override
     public AtomicInteger getRuns() throws RemoteException{
         return this.runs;
-    }
+    }*/
 
     @Override
     public void setName(String name) throws RemoteException{

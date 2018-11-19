@@ -13,8 +13,8 @@ public interface IRemoteEntity extends Remote {
     public void deliver(Message m) throws RemoteException;
     public void setVectorClock(int i, int id) throws RemoteException;
     public void setEntities(IRemoteEntity[] enities) throws RemoteException;
-    public void setRuns(int i) throws RemoteException;
-    public AtomicInteger getRuns() throws RemoteException;
+    //public void setRuns(int i) throws RemoteException;
+    //public AtomicInteger getRuns() throws RemoteException;
     public void setName(String name) throws RemoteException;
     public String getName() throws RemoteException;
     public void setId(int id) throws RemoteException;
