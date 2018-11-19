@@ -20,6 +20,7 @@ public class RemoteProcess implements Runnable{
 		{
 			try
 			{
+				Thread.sleep(process.getId()*500);
 				process.sendMessage();
 			}
 			catch (Exception e) {

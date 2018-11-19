@@ -35,7 +35,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     	Buffer receivedBuffer = m.getBuffer();
         int receiver = m.getReceiver();
         //m.getBuffer().printit();
-        if (!receivedBuffer.contains(receiver) || (m.getBuffer().contains(receiver)
+        if (!receivedBuffer.contains(receiver) || (receivedBuffer.contains(receiver)
                 && receivedBuffer.get(receiver).smallerOrEqualThan(this.vt))) {
         	System.out.println("Process " + id + " was delivered the message "+m.getText());
             deliver(m);
@@ -43,9 +43,11 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
             if(message!=null) {
             	receivedBuffer = message.getBuffer();
             	receiver = message.getReceiver();
+
                 while (!receivedBuffer.contains(receiver) || (receivedBuffer.contains(receiver)
                         && receivedBuffer.get(receiver).smallerOrEqualThan(vt))) {
                     deliver(message);
+                    msgBuffer.poll();
                     message = this.msgBuffer.peek();
                     if (message == null) break;
                     receivedBuffer = message.getBuffer();
@@ -91,7 +93,6 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
         + " by " + m.getSender());
         this.vt = new VectorClock(this.id, this.vt.merge(m.getTimestamp()));
         this.vt.incTimeVector(m.getSender());
-        msgBuffer.poll();
 
         for (int i = 0; i < RD.length; i++) {
             if (m.getBuffer().contains(i)) {

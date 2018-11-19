@@ -59,7 +59,8 @@ public class Server {
 			int receiver = Integer.parseInt(split_line[2]);
 			int delay = Integer.parseInt(split_line[3]);
 			VectorClock vt = new VectorClock(sender,numProc);	
-			temp = new Message(msgId, msgText, vt, new Buffer(), sender, receiver, delay);(RMI_IDS[sender]).addMessageToBeSent(temp);
+			temp = new Message(msgId, msgText, vt, new Buffer(), sender, receiver, delay);
+			(RMI_IDS[sender]).addMessageToBeSent(temp);
 			msgNum[sender]++;
 			msgId++;
 		}
