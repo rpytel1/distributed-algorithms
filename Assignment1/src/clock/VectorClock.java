@@ -1,67 +1,56 @@
 package clock;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Arrays;
 
-public class VectorClock implements Serializable {
+public class VectorClock implements Serializable{
 
-    List<Integer> timeVector;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	int[] timeVector;
     int processID;
-    private static final long serialVersionUID = 1L;
-
-    public VectorClock() {
-
-    }
 
     public VectorClock(int id, int n) {
-        timeVector = new ArrayList<>(Collections.nCopies(n, 0));
-        processID = id;
+    	this.timeVector = new int[n];
+        for (int i=0; i<n; i++) this.timeVector[i] = 0;
+        this.processID = id;
     }
 
-    public VectorClock(int id, List<Integer> vt) {
-        timeVector = new ArrayList<>(vt);
-        processID = id;
+    public VectorClock(int id, int[] vt) {
+        this.timeVector = vt;
+        this.processID = id;
+    }
+    
+    public int[] clone() {
+        return Arrays.copyOf(this.timeVector, this.timeVector.length);
     }
 
-    public List<Integer> getTimeVector() {
+    public int[] getVector() {
         return this.timeVector;
     }
 
-    public void setTimeVector(List<Integer> timeVector) {
-        this.timeVector = timeVector;
-    }
-
-    public int getProcessID() {
-        return processID;
-    }
-
-    public void setProcessID(int processID) {
-        this.processID = processID;
+    public int getID() {
+        return this.processID;
     }
 
     public int size() {
-        return this.timeVector.size();
+        return this.timeVector.length;
     }
 
     public void incTimeVector(int i) {
-        this.timeVector.set(i, this.timeVector.get(i) + 1);
+        this.timeVector[i]+=1;
     }
 
-    public List<Integer> merge(VectorClock vc2) {
+    public int[] merge(VectorClock vc2) {
         if (vc2 == null) {
             return this.timeVector;
         }
-
-        for (int i = 0; i < this.timeVector.size(); i++) {
-            Integer myTime = this.timeVector.get(i);
-            Integer receivedTime = vc2.getTimeVector().get(i);
-
-            if (myTime < receivedTime) {
-                this.timeVector.add(i, receivedTime);
-                this.timeVector.remove(i + 1);
-            }
+        for (int i = 0; i < this.timeVector.length; i++) {
+            int myTime = this.timeVector[i];
+            int receivedTime = vc2.getVector()[i];
+            if (myTime < receivedTime) this.timeVector[i] = receivedTime;
         }
         return this.timeVector;
     }
@@ -73,10 +62,9 @@ public class VectorClock implements Serializable {
         }
 
         boolean smallerOrEqual = true;
-        for (int i = 0; i < this.timeVector.size(); i++) {
-            Integer myTime = this.timeVector.get(i);
-            Integer receivedTime = vc2.getTimeVector().get(i);
-
+        for (int i = 0; i < this.timeVector.length; i++) {
+            int myTime = this.timeVector[i];
+            int receivedTime = vc2.getVector()[i];
             if (myTime > receivedTime) {
                 smallerOrEqual = false;
             }
@@ -85,16 +73,32 @@ public class VectorClock implements Serializable {
         return smallerOrEqual;
 
     }
+    
+    public boolean smallerThan(VectorClock vc2) {
+        if (vc2 == null) {
+            return true;
+        }
+
+        boolean smaller = true;
+        for (int i = 0; i < this.timeVector.length; i++) {
+            int myTime = this.timeVector[i];
+            int receivedTime = vc2.getVector()[i];
+            if (myTime >= receivedTime) {
+                smaller = false;
+            }
+            if (!smaller) break;
+        }
+        return smaller;
+
+    }
 
     @Override
     public String toString() {
         // TODO Auto-generated method stub
         String str = "Time vector of process " + this.processID + ":\n";
-        for (int i = 0; i < this.timeVector.size(); i++) {
-            str = str + "Time: " + this.timeVector.get(i) + "\t Process: " + i + "\n";
+        for (int i = 0; i < this.timeVector.length; i++) {
+            str = str + "Time: " + this.timeVector[i] + "\t Process: " + i + "\n";
         }
         return str;
     }
-
-
 }

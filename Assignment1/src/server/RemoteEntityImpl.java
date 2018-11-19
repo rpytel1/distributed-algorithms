@@ -8,6 +8,7 @@ import util.IRemoteEntity;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import clock.VectorClock;
@@ -17,11 +18,10 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     private int id;
     private String name;
     private MessageBuffer msgBuffer;
-    private ArrayList<Message> toBeSent;
+    public ArrayList<Message> toBeSent;
     private IRemoteEntity[] RD;
     private Buffer S;
     private VectorClock vt;
-    private AtomicInteger runs;
 
     protected RemoteEntityImpl() throws RemoteException {
         super();
@@ -31,58 +31,71 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     }
 
     @Override
-    public void receive(Message m) throws RemoteException{
-        Buffer receivedBuffer = m.getBuffer();
-        int receiver = m.getReceiverID();
-
+    public synchronized void receive(Message m) throws RemoteException{
+    	Buffer receivedBuffer = m.getBuffer();
+        int receiver = m.getReceiver();
+        //m.getBuffer().printit();
         if (!receivedBuffer.contains(receiver) || (m.getBuffer().contains(receiver)
-                && receivedBuffer.get(receiver).smallerOrEqualThan(vt))) {
+                && receivedBuffer.get(receiver).smallerOrEqualThan(this.vt))) {
+        	System.out.println("Process " + id + " was delivered the message "+m.getText());
             deliver(m);
-
-            Message message = msgBuffer.peek();
+            Message message = this.msgBuffer.peek();
             if(message!=null) {
-                while (!message.getBuffer().contains(message.getReceiverID()) || (message.getBuffer().contains(message.getReceiverID())
-                        && message.getBuffer().get(message.getReceiverID()).smallerOrEqualThan(vt))) {
-                    deliver(msgBuffer.peek());
-                    message = msgBuffer.peek();
+            	receivedBuffer = message.getBuffer();
+            	receiver = message.getReceiver();
+                while (!receivedBuffer.contains(receiver) || (receivedBuffer.contains(receiver)
+                        && receivedBuffer.get(receiver).smallerOrEqualThan(vt))) {
+                    deliver(message);
+                    message = this.msgBuffer.peek();
+                    if (message == null) break;
+                    receivedBuffer = message.getBuffer();
+                	receiver = message.getReceiver();
                 }
             }
-        } else {
-            msgBuffer.add(m);
-        }
+        } 
+        else this.msgBuffer.add(m);
     }
-
+    
     @Override
-    public void sendMessage() throws RemoteException{
-        System.out.println("Sending message" +vt);
-    	if (this.toBeSent.get(0)!= null){
-	    	Message m = this.toBeSent.get(0);
-	        this.vt.incTimeVector(id);
-            new Thread(() -> {
-                try {
-                    Thread.sleep((int) (Math.random() * 500));
-                    RD[m.getReceiverID()].receive(m);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }).start();
-
-	        S.put(m.getReceiverID(), vt);
-	        this.toBeSent.remove(0);
+    public synchronized void sendMessage() throws RemoteException{
+    	if (this.toBeSent != null){
+	    	if (this.toBeSent.get(0)!= null){
+		    	Message m = this.toBeSent.get(0);
+		    	this.vt.incTimeVector(this.id);
+		    	m.setBuffer(new Buffer(this.S.clone()));
+		    	m.setTimestamp(new VectorClock(m.getId(), this.vt.clone()));
+		    	m.getBuffer().printit();
+		        new java.util.Timer().schedule( 
+		                new java.util.TimerTask() {
+		                    @Override
+		                    public void run() {
+		                        try {
+		                        	RD[m.getReceiver()].receive(m);
+		                        } catch (RemoteException e) {
+		                            e.printStackTrace();
+		                        }
+		                    }
+		                },
+		                m.getDelay()
+		        );
+		        System.out.println("Process "+this.id+" sends message "+m.getText()+" to process "+m.getReceiver());
+		        this.S.put(m.getReceiver(), new VectorClock(m.getId(), this.vt.clone()));
+		        this.toBeSent.remove(0);
+	    	}
     	}
     }
 
     @Override
-    public void deliver(Message m) throws RemoteException{
-        System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiverID()+" time:"+vt);
-        this.vt.incTimeVector(m.getSenderID());
+    public synchronized void deliver(Message m) throws RemoteException{
+    	System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiver() 
+        + " by " + m.getSender());
+        this.vt = new VectorClock(this.id, this.vt.merge(m.getTimestamp()));
+        this.vt.incTimeVector(m.getSender());
         msgBuffer.poll();
-        this.runs.decrementAndGet();
 
         for (int i = 0; i < RD.length; i++) {
             if (m.getBuffer().contains(i)) {
-                S.put(i, m.getBuffer().get(i));
-                this.runs.decrementAndGet();
+                S.putAndMerge(i, m.getBuffer().get(i));
             }
         }
     }
@@ -95,16 +108,6 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     @Override
     public void setEntities(IRemoteEntity[] entities) throws RemoteException{
         this.RD = entities;
-    }
-    
-    @Override
-    public void setRuns(int i) throws RemoteException{
-        this.runs = new AtomicInteger(i);
-    }
-    
-    @Override
-    public AtomicInteger getRuns() throws RemoteException{
-        return this.runs;
     }
 
     @Override
@@ -127,14 +130,9 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
     public int getId() throws RemoteException{
         return id;
     }
-
-    @Override
-    public void addMessage(Message m) throws RemoteException{
-        this.msgBuffer.add(m);
-    }
     
     @Override
-    public void addMessageToBeSent(int i, Message m) throws RemoteException{
-        this.toBeSent.add(i, m);
+    public void addMessageToBeSent(Message m) throws RemoteException{
+        this.toBeSent.add(m);
     }
 }

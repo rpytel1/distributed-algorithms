@@ -3,8 +3,8 @@ package message;
 import java.util.Comparator;
 
 public class MessageComparator implements Comparator<Message>{
-	public int compare(Message o1, Message o2) {
-		if(o1.timestamp.smallerOrEqualThan(o2.timestamp)){
+	public int compare(Message m1, Message m2) {
+		if(m1.getTimestamp().smallerOrEqualThan(m2.getTimestamp())){
 			return -1;
 		}
 		else{

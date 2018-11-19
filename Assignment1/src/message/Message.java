@@ -1,71 +1,78 @@
 package message;
 
+import java.io.Serializable;
+
 import clock.VectorClock;
 import util.Buffer;
 
-import java.io.Serializable;
-
-public class Message implements Serializable {
-    String text;
+public class Message implements Serializable{
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	String text;
     VectorClock timestamp;
     Buffer buffer;
     int receiverID;
     int senderID;
-    private static final long serialVersionUID = 1L;
-
-    public Message() {
-
+    int id;
+    int delay;
+    
+    public Message(int id, String m, VectorClock vt, Buffer S, int sID, int rID, int delay){
+    	this.id = id;
+		this.text = m;
+		this.timestamp = vt;
+		this.buffer = S;
+		this.receiverID = rID;
+		this.senderID = sID;
+		this.delay = delay;
+	}
+    
+    public String getText(){
+    	return this.text;
     }
-
-    public Message(String m, VectorClock vt, Buffer S, int sID, int rID) {
-        this.text = m;
-        this.timestamp = vt;
-        this.buffer = S;
-        this.receiverID = rID;
-        this.senderID = sID;
+    
+    public VectorClock getTimestamp(){
+    	return this.timestamp;
     }
-
-    public String getText() {
-        return this.text;
+    
+    public Buffer getBuffer(){
+    	return this.buffer;
     }
-
-    public VectorClock getTimestamp() {
-        return this.timestamp;
+    
+    public int getDelay(){
+    	return this.delay;
     }
-
-    public Buffer getBuffer() {
-        return this.buffer;
+    
+    public void setBuffer(Buffer b){
+    	this.buffer = b;
     }
-
-    public int getReceiverID() {
-        return this.receiverID;
+    
+    public int getReceiver(){
+    	return this.receiverID;
     }
-
-    public int getSenderID() {
-        return this.senderID;
+    
+    public int getSender(){
+    	return this.senderID;
     }
-
-    public void setText(String text) {
-        this.text = text;
+    
+    public int getId(){
+    	return this.id;
     }
+    
+    @Override
+    public String toString() {
+        return "Message{" +
+                "id=" + id +
+                ", srcId=" + senderID +
+                ", destId=" + receiverID +
+                ", content=" + text +
+                ", time=" + timestamp.getVector()[senderID] +
+                '}';
+}
 
-    public void setTimestamp(VectorClock timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public void setBuffer(Buffer buffer) {
-        this.buffer = buffer;
-    }
-
-
-    public void setReceiverID(int receiverID) {
-        this.receiverID = receiverID;
-    }
-
-
-    public void setSenderID(int senderID) {
-        this.senderID = senderID;
-    }
-
+	public void setTimestamp(VectorClock vt) {
+		this.timestamp = vt;
+	}
 
 }
