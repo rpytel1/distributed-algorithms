@@ -13,6 +13,10 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import clock.VectorClock;
@@ -21,6 +25,7 @@ import message.Message;
 public class Server {
 	
 	private static int msgNum[];
+	private static Map<Integer, ArrayList<Integer>> msgOrd;
 	private static IRemoteEntity[] RMI_IDS;
 	private static int msgId;
 	private static int numProc;
@@ -28,7 +33,7 @@ public class Server {
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException, InterruptedException {
         Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
 
-        BufferedReader br = new BufferedReader(new FileReader("tests/clients.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt"));
         String line = "";
         while ((line = br.readLine()) != null) {
             registry.bind(line, new RemoteEntityImpl());
@@ -46,11 +51,15 @@ public class Server {
         for(int i=0; i<numProc; i++){
             RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
         }
-        BufferedReader br = new BufferedReader(new FileReader("tests/messages.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/messages3.txt"));
 		String line = "";
 		Message temp;
 		msgNum = new int[numProc];
-		for (int i=0; i<numProc; i++) msgNum[i] = 0;
+		msgOrd = new HashMap<Integer, ArrayList<Integer>>();
+		for (int i=0; i<numProc; i++){
+			msgNum[i] = 0;
+			msgOrd.put(i, new ArrayList<Integer>());
+		}
 		msgId = 0;
 		while ((line = br.readLine()) != null) {
 			String[] split_line = line.split(" ");
@@ -63,6 +72,9 @@ public class Server {
 			(RMI_IDS[sender]).addMessageToBeSent(temp);
 			msgNum[sender]++;
 			msgId++;
+			ArrayList<Integer> tmp = new ArrayList<Integer>(msgOrd.get(sender));
+			tmp.add(Integer.parseInt(split_line[4]));
+			msgOrd.put(sender, tmp);
 		}
 		br.close();
 		
@@ -71,7 +83,7 @@ public class Server {
             RMI_IDS[i].setName(registry.list()[i]);
             RMI_IDS[i].setId(i);
             RMI_IDS[i].setVectorClock(i,numProc);
-            RemoteProcess p = new RemoteProcess(RMI_IDS[i], msgNum[i]);
+            RemoteProcess p = new RemoteProcess(RMI_IDS[i], msgNum[i], msgOrd.get(i));
             myThreads[i] = new Thread(p);
         }
         

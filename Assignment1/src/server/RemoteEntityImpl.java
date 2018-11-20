@@ -37,7 +37,6 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
         //m.getBuffer().printit();
         if (!receivedBuffer.contains(receiver) || (receivedBuffer.contains(receiver)
                 && receivedBuffer.get(receiver).smallerOrEqualThan(this.vt))) {
-        	System.out.println("Process " + id + " was delivered the message "+m.getText());
             deliver(m);
             Message message = this.msgBuffer.peek();
             if(message!=null) {
@@ -66,7 +65,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 		    	this.vt.incTimeVector(this.id);
 		    	m.setBuffer(new Buffer(this.S.clone()));
 		    	m.setTimestamp(new VectorClock(m.getId(), this.vt.clone()));
-		    	m.getBuffer().printit();
+		    	//m.getBuffer().printit();
 		        new java.util.Timer().schedule( 
 		                new java.util.TimerTask() {
 		                    @Override
@@ -80,7 +79,7 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 		                },
 		                m.getDelay()
 		        );
-		        System.out.println("Process "+this.id+" sends message "+m.getText()+" to process "+m.getReceiver());
+		        System.out.println("Process "+this.id+" sent message "+m.getText()+" to process "+m.getReceiver());
 		        this.S.put(m.getReceiver(), new VectorClock(m.getId(), this.vt.clone()));
 		        this.toBeSent.remove(0);
 	    	}
@@ -89,8 +88,8 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
 
     @Override
     public synchronized void deliver(Message m) throws RemoteException{
-    	System.out.println("Message " + m.getText() + " has been delivered to " + m.getReceiver() 
-        + " by " + m.getSender());
+    	System.out.println("Message " + m.getText() + " has been delivered to process " + m.getReceiver() 
+        + " by process " + m.getSender());
         this.vt = new VectorClock(this.id, this.vt.merge(m.getTimestamp()));
         this.vt.incTimeVector(m.getSender());
 
