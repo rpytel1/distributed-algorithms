@@ -24,7 +24,7 @@ public class RemoteProcess implements Runnable{
 		{
 			try
 			{
-				Thread.sleep(process.getId()*500);
+				//Thread.sleep(process.getId()*500);
 				//System.out.println(delays.get(i));
 				Thread.sleep(delays.get(i));
 				process.sendMessage();
