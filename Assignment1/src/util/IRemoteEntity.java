@@ -4,8 +4,11 @@ import message.Message;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+
+/* The remote interface that extends the standard Remote interface with
+ * all the needed methods implemented for remote communication of processes
+ * according to the Schiper-Eggli-Sandoz algorithm
+ */
 
 public interface IRemoteEntity extends Remote {
     public void receive(Message m) throws RemoteException;
