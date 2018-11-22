@@ -37,7 +37,7 @@ public class Server {
         Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
         
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/clients.txt")); 
+        BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt")); 
         String line = "";
         while ((line = br.readLine()) != null) {
             registry.bind(line, new RemoteEntityImpl());
@@ -58,7 +58,7 @@ public class Server {
         
         // "messages" files contain the messages to be sent and are constructed in the following way
         // senderID messageText receiverID deliveryDelay sendingDelay
-        BufferedReader br = new BufferedReader(new FileReader("tests/messages.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/messages3.txt"));
 		String line = "";
 		Message temp;
 		msgNum = new int[numProc];

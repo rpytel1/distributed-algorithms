@@ -106,8 +106,9 @@ public class RemoteEntityImpl extends UnicastRemoteObject implements IRemoteEnti
         + " by process " + m.getSender());
     	// after the delivery of the message the VectorClock of the receiving process is updated
         this.vt = new VectorClock(this.id, this.vt.merge(m.getTimestamp())); 
-        this.vt.incTimeVector(m.getSender()); // and incremented in the entry of the sending process
+        //this.vt.incTimeVector(m.getSender()); // and incremented in the entry of the sending process
         									  // so that it contains the latest known info
+        this.vt.incTimeVector(this.id);
         for (int i = 0; i < RD.length; i++) {
             if (m.getBuffer().contains(i)) {
                 S.putAndMerge(i, m.getBuffer().get(i)); // lastly the buffer of the receiving process 
