@@ -22,6 +22,13 @@ public class RemoteProcess implements Runnable{
 	
 	@Override
 	public void run() {
+		try {
+			Thread.sleep(10000); // just added so that the ordering of the messages between processes
+								 // on different machines is kept
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} 
 		for (int i = 0; i < this.num; i++)
 		{
 			try
