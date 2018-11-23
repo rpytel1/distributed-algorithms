@@ -4,16 +4,12 @@ import src.util.IComponent;
 import src.util.Token;
 
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /* Class with remote methods that contains all the functionalities of 
- * point-to-point communication with causal ordering according to the 
- * Schiper-Eggli-Sandoz algorithm
+ * request and token sending and needed in implementing Singhal’s algorithm 
+ * for token-based mutual exclusion
  */
 
 public class RemoteComponentImpl extends UnicastRemoteObject implements IComponent {
@@ -22,8 +18,8 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
 	private int id; // the process id 
     private String name; // the process name
     private IComponent[] RD; // the array with the info of all the remote processes 
-    private int[] N;
-    private String[] States;
+    private int[] N; // the local array of the number of requests of all the processes
+    private String[] States; // the local array of the state of all the processes
     private int numProc;
     private Token tk;
 
@@ -37,29 +33,30 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         this.States = new String[n];
         this.tk = new Token(n);
         for (int i=0; i<n; i++)	N[i] = 0;
+        // different type of initialization for process 0 and the others
         if(this.id == 0){
-        	States[0] = "H";
-        	for (int i=1; i<n; i++) States[i] = "O";
+        	this.States[0] = "H";
+        	for (int i=1; i<n; i++) this.States[i] = "O";
         }
         else{
-        	for (int i=0; i<this.id; i++) States[i] = "R";
-        	for (int i=this.id; i<n; i++) States[i] = "O";
+        	for (int i=0; i<this.id; i++) this.States[i] = "R";
+        	for (int i=this.id; i<n; i++) this.States[i] = "O";
         }
     }
      
     /**
-     * Broadcast request to the needed components
+     * Broadcast request to the components that it is suspected to possess the tokken
      */
     @Override
     public void sendRequest() throws RemoteException{
     	if (this.States[this.id].equals("H")){	
     		System.out.println("Process " + this.id +" Sending request to itself");
     		RD[this.id].receiveRequest(this.id,this.N[this.id]);
-    	}
+    	}	
     	this.States[this.id] = "R";
     	this.N[this.id] += 1;
     	int i = 0;
-    	while(i<numProc){
+    	while(i<this.numProc){
     		if (i!=this.id){
     			if (this.States[i].equals("R")){
     				System.out.println("Process " + this.id +" Sending request to process "+ i);
@@ -71,7 +68,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         
     }
 
-    /* Method implementing the receiving request procedure
+    /* Method for receiving a token request 
      */
     @Override
     public synchronized void receiveRequest(int reqId, int numReq) throws RemoteException {
@@ -90,11 +87,14 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         	this.States[this.id] = "O";
         	this.tk.setTS(reqId, "R");
         	this.tk.setTN(reqId, numReq);
+        	System.out.println("Process " + this.id +" sending token to process "+ reqId);
         	RD[reqId].receiveToken();
         }
 	        
 	}
-	    
+	
+    /* Method for receiving the token 
+     */
     @Override
     public void receiveToken() throws RemoteException {
     	
@@ -121,22 +121,23 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         }
         if (flag) this.States[this.id] = "H";
         else{
-        	for(int i = 1; i < this.numProc+1; i++) {
-                
+        	for(int i = 1; i < this.numProc+1; i++) {               
                 // Cyclic check
-                int reqID = (id + i)%this.numProc;
-                
+                int reqID = (this.id + i)%this.numProc;   
                 // Send to first process with outstanding request
                 if (this.States[reqID].equals("R")){
+                	System.out.println("Process " + this.id +" sending token to process "+ reqID);
                 	RD[reqID].receiveToken();
                 	break;
                 }
         	}
         }
 	}
-  
+    
+    /* Method implementing the critical section of each process
+     */
     private void criticalSection() {
-        this.States[this.id] = "E";
+        //this.States[this.id] = "E";
         System.out.println("Process "+ this.id + " entering critical section");
         try {
             Thread.sleep((int) Math.random()*5000);
@@ -144,8 +145,8 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         	System.out.println("Critical section interrupted");
         }
         System.out.println("Process "+ this.id + " leaving critical section");
-        this.States[this.id] = "O";
-        this.tk.setTS(this.id, "O");
+        //this.States[this.id] = "O";
+        //this.tk.setTS(this.id, "O");
     }
     
     @Override

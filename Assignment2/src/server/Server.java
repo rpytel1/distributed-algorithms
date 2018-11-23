@@ -11,9 +11,6 @@ import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 
 /* Class that initializes the rmiregistry configurations so that the communication
@@ -23,8 +20,7 @@ import java.util.Map;
  */
 
 public class Server {
-	
-	private static Map<Integer, ArrayList<Integer>> msgOrd;  
+	 
 	private static IComponent[] RMI_IDS; // Array with the remote processes
 	private static int numProc; // number of remote processes created
 	
@@ -40,6 +36,7 @@ public class Server {
         br.close();
         numProc = registry.list().length;
         setRegistry();
+        System.out.println(numProc);
         System.out.println("started");
     }
 

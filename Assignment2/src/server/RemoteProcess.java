@@ -3,7 +3,7 @@ package src.server;
 import src.util.IComponent;
 
 /* Class used to implement the Runnable interface so that each process is associated with a thread
- * All the sending part is included in the run() method of the class
+ * All the requesting part is included in the run() method of the class
  */
 public class RemoteProcess implements Runnable{
 
@@ -19,8 +19,8 @@ public class RemoteProcess implements Runnable{
 		{
 			try
 			{
-				// every process sleeps for delays.get(i) milliseconds before sending each message
-				// so that the ordering in the sending procedure can be maintained easily
+				// every process sleeps for some random milliseconds before sending each new
+				//  request 
 				Thread.sleep((int)Math.random()*3000); 
 				process.sendRequest();
 			}

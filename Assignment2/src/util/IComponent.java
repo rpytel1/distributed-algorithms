@@ -2,7 +2,6 @@ package src.util;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
 
 public interface IComponent extends Remote {
 	public void init(int n) throws RemoteException;
