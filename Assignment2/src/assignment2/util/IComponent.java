@@ -1,4 +1,4 @@
-package src.util;
+package assignment2.util;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

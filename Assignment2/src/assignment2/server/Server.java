@@ -1,8 +1,8 @@
-package src.server;
+package assignment2.server;
 
 
-import src.util.Constant;
-import src.util.IComponent;
+import assignment2.util.Constant;
+import assignment2.util.IComponent;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
