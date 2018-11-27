@@ -16,6 +16,6 @@ public interface IComponent extends Remote {
     public void setListOfStates(String[] arr) throws RemoteException;
     public void sendRequest() throws RemoteException;
     public void receiveRequest(int id, int numRec) throws RemoteException;
-    public void receiveToken() throws RemoteException;
+    public void receiveToken(Token tk) throws RemoteException;
     public void setNumProc(int n) throws RemoteException;
 }

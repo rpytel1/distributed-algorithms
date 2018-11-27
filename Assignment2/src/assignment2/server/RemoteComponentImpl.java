@@ -50,8 +50,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
      * Broadcast request to the components that it is suspected to possess the tokken
      */
     @Override
-    public void sendRequest() throws RemoteException {
-        System.out.println(id + " " + "Started sending request");
+    public void sendRequest() {
 
         if (States[id].equals("H")) {
             System.out.println(getStateStamp() + id + ":Sending request to itself");
@@ -89,23 +88,20 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
                                     }
                                 }
                             },
-                            200 // and the delivery delay is set
+                            200
                     );
 
                 }
             }
             i += 1;
         }
-        System.out.println(id + " " + "Finished sending request");
-
     }
 
 
     /* Method for receiving a token request
      */
     @Override
-    public void receiveRequest(int reqId, int numReq) throws RemoteException {
-        System.out.println(id + " " + index + "Started receiving request" + reqId);
+    public void receiveRequest(int reqId, int numReq){
         // Update requests
         System.out.println(getStateStamp() + id + ":Receiving request from process " + reqId);
         N[reqId] = numReq;
@@ -145,7 +141,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
                         @Override
                         public void run() {
                             try {
-                                RD[reqId].receiveToken();
+                                RD[reqId].receiveToken(tk);
                             } catch (RemoteException e) {
                                 e.printStackTrace();
                             }
@@ -155,7 +151,6 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
 
 
         }
-        System.out.println(id + " " + index + "Finished receiving request" + reqId);
         index++;
 
     }
@@ -163,16 +158,14 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
     /* Method for receiving the token
      */
     @Override
-    public void receiveToken() throws RemoteException {
-        System.out.println(id + "Started receiving tokken");
+    public void receiveToken(Token tk){
+        this.tk = tk;
         System.out.println(getStateStamp() + id + ":Token received ");
         States[id] = "E";
         criticalSection();
         States[id] = "O";
         tk.setTS(id, "O");
         for (int i = 0; i < numProc; i++) {
-            System.out.println("Executions" + N[i] + " " + tk.getTN(i));
-            System.out.println("States" + States[i] + " " + tk.getTS(i));
             if (N[i] > tk.getTN(i)) {
                 tk.setTN(i, N[i]);
                 tk.setTS(i, States[i]);
@@ -201,7 +194,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
                                 @Override
                                 public void run() {
                                     try {
-                                        RD[reqID].receiveToken();
+                                        RD[reqID].receiveToken(tk);
                                     } catch (RemoteException e) {
                                         e.printStackTrace();
                                     }
@@ -214,8 +207,6 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
                 }
             }
         }
-        System.out.println(id + "Finished receiving tokken");
-
     }
 
     /* Method implementing the critical section of each process
