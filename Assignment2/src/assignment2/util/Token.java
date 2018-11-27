@@ -9,7 +9,11 @@ public class Token implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private int[] TN; // the token array with the number of requests of each process
 	private String[] TS; // the token array with the state of each process
-	
+
+	public Token(){
+
+	}
+
 	public Token(int n){
 		this.TN = new int[n];
 		this.TS = new String[n];
@@ -34,5 +38,20 @@ public class Token implements Serializable{
 	public String getTS(int i){
 		return this.TS[i];
 	}
-		
+
+	public int[] getTN() {
+		return TN;
+	}
+
+	public void setTN(int[] TN) {
+		this.TN = TN;
+	}
+
+	public String[] getTS() {
+		return TS;
+	}
+
+	public void setTS(String[] TS) {
+		this.TS = TS;
+	}
 }
