@@ -5,7 +5,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
-import java.rmi.RMISecurityManager;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ import util.Buffer;
 import util.Constant;
 import util.IRemoteEntity;
 import server.RemoteProcess;
+
 
 /* The client class that generates some of the processes and sets the initial values for all those 
  * remote processes according to the testcases provided as inputs. It also initiates the threads that 
@@ -37,50 +37,36 @@ public class Client1 {
 	private static ArrayList<Integer> localIDS; // ids of local processes
 	
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException, InterruptedException {
-    	/*if (System.getSecurityManager() == null) {
-            System.setSecurityManager(new RMISecurityManager());
-    	}*/
-    	//Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
     	Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
         
         // "clients" files contain the name of the remote processes used
         BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt")); 
-        String line = "";
-        numProc = 0; // added later
-        while ((line = br.readLine()) != null) {
-        	String[] split_line = line.split(" ");
-        	if(Integer.parseInt(split_line[1]) == 1){
-        		registry.bind("//localhost:"+Constant.RMI_PORT+"/"+split_line[0], new RemoteEntityImpl());
-        	}
-        	/*else{
-        		registry.bind("//145.94.185.243:"+Constant.RMI_PORT+"/"+split_line[0], new RemoteEntityImpl());
-        	}*/
-        	numProc++;
-        }
-        br.close();
-        br = new BufferedReader(new FileReader("tests/clients3.txt")); 
-        line = "";
-        //numProc = registry.list().length;
+        String line = br.readLine();
+        numProc = Integer.parseInt(line);
         localProc = 0;
         int i = 0;
         local = new int[numProc];
         localIDS = new ArrayList<Integer>();
         while ((line = br.readLine()) != null) {
         	String[] split_line = line.split(" ");
-            if(Integer.parseInt(split_line[1]) == 1){ 
-            	local[i] = 1; // check if the process is local
+        	if(Integer.parseInt(split_line[1]) == 1){
+        		registry.bind("//localhost:"+Constant.RMI_PORT+"/"+split_line[0], new RemoteEntityImpl());
+        		local[i] = 1; // check if the process is local
             	localProc++;
             	localIDS.add(i);
-            }
-            else local[i] = 0; 
-            i++; 
+        	}
+        	else{
+        		registry.bind("//145.94.186.211:"+Constant.RMI_PORT+"/"+split_line[0], new RemoteEntityImpl());
+        		local[i] = 0; 
+        	}
+        	i++;
         }
         br.close();
-        setRegistry();
         System.out.println("Press enter to continue");
         Scanner scan = new Scanner(System.in);
         scan.nextLine();
-        System.out.println("Client1 started");
+        setRegistry();
+        System.out.println("Client 1 started");
     }
 
     public static void setRegistry() throws NotBoundException, NumberFormatException, IOException{
@@ -88,10 +74,7 @@ public class Client1 {
         RMI_IDS = new IRemoteEntity[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[localProc]; // and localProc number of threads are created
         for(int i=0; i<numProc; i++){
-        	if (local[i]==1)
-        		RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
-        	else
-        		RMI_IDS[i] = (IRemoteEntity) java.rmi.Naming.lookup("//145.94.185.243:"+Constant.RMI_PORT+"/Client"+(i+1));
+        	RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
         }
         
         // "messages" files contain the messages to be sent and are constructed in the following way
