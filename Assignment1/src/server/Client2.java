@@ -36,11 +36,29 @@ public class Client2 {
 	private static ArrayList<Integer> localIDS; // ids of local processes
 	
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException, InterruptedException {
-    	Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
-        
-        // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt")); 
-        String line = "";
+    	/*if (System.getSecurityManager() == null) {
+        	System.setSecurityManager(new RMISecurityManager());
+		}*/
+		//Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
+		Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
+	    
+	    // "clients" files contain the name of the remote processes used
+	    BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt")); 
+	    String line = "";
+	    numProc = 0; // added later
+	    while ((line = br.readLine()) != null) {
+	    	String[] split_line = line.split(" ");
+	    	if(Integer.parseInt(split_line[1]) == 2){
+	    		registry.bind("//localhost:"+Constant.RMI_PORT+"/"+split_line[0], new RemoteEntityImpl());
+	    	}
+	    	/*else{
+	    		registry.bind("//145.94.185.243:"+Constant.RMI_PORT+"/"+split_line[0], new RemoteEntityImpl());
+	    	}*/
+	    	numProc++;
+	    }
+	    br.close();
+	    br = new BufferedReader(new FileReader("tests/clients3.txt")); 
+        line = "";
         numProc = registry.list().length;
         localProc = 0;
         int i = 0;
@@ -58,6 +76,9 @@ public class Client2 {
         }
         br.close();
         setRegistry();
+        System.out.println("Press enter to continue");
+        Scanner scan = new Scanner(System.in);
+        scan.nextLine();
         System.out.println("Client2 started");
     }
 
@@ -66,7 +87,10 @@ public class Client2 {
         RMI_IDS = new IRemoteEntity[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[localProc]; // and localProc number of threads are created
         for(int i=0; i<numProc; i++){
-        	RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
+        	if (local[i]==1)
+        		RMI_IDS[i] = (IRemoteEntity) registry.lookup(registry.list()[i]);
+        	else
+        		RMI_IDS[i] = (IRemoteEntity) java.rmi.Naming.lookup("//145.94.185.243:"+Constant.RMI_PORT+"/Client"+(i+1));
         }
         
         // "messages" files contain the messages to be sent and are constructed in the following way
