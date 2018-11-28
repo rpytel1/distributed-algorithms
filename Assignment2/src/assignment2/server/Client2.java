@@ -1,4 +1,4 @@
-package src.assignment2.server;
+package assignment2.server;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -10,9 +10,8 @@ import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import src.assignment2.util.Constant;
-import src.assignment2.server.RemoteProcess;
-import src.assignment2.util.IComponent;
+import assignment2.util.Constant;
+import assignment2.util.IComponent;
 
 public class Client2 {
 	private static IComponent[] RMI_IDS; // Array with the remote processes
@@ -24,13 +23,15 @@ public class Client2 {
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException, InterruptedException {
     	
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt")); 
+        BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt"));
+
+
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
         int i = 0;
         local = new int[numProc];
-        localIDS = new ArrayList<Integer>();
+        localIDS = new ArrayList<>();
         while ((line = br.readLine()) != null) {
         	String[] split_line = line.split(" ");
         	if(Integer.parseInt(split_line[1]) == 2){

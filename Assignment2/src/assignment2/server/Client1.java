@@ -1,4 +1,7 @@
-package src.assignment2.server;
+package assignment2.server;
+
+import assignment2.util.Constant;
+import assignment2.util.IComponent;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -9,10 +12,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.Scanner;
-
-import src.assignment2.util.Constant;
-import src.assignment2.server.RemoteProcess;
-import src.assignment2.util.IComponent;
 
 public class Client1 {
 	private static IComponent[] RMI_IDS; // Array with the remote processes
