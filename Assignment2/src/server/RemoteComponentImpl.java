@@ -45,7 +45,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
     }
      
     /**
-     * Broadcast request to the components that it is suspected to possess the tokken
+     * Broadcast request to the components that it is suspected to possess the token
      */
     @Override
     public void sendRequest() throws RemoteException{
@@ -53,19 +53,20 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
     		System.out.println("Process " + this.id +" Sending request to itself");
     		RD[this.id].receiveRequest(this.id,this.N[this.id]);
     	}	
-    	this.States[this.id] = "R";
-    	this.N[this.id] += 1;
-    	int i = 0;
-    	while(i<this.numProc){
-    		if (i!=this.id){
-    			if (this.States[i].equals("R")){
-    				System.out.println("Process " + this.id +" Sending request to process "+ i);
-    				RD[i].receiveRequest(this.id,this.N[this.id]);
-    			}
-    		}
-    		i+=1;
-    	}       
-        
+    	else{
+	    	this.States[this.id] = "R";
+	    	this.N[this.id] += 1;
+	    	int i = 0;
+	    	while(i<this.numProc){
+	    		if (i!=this.id){
+	    			if (this.States[i].equals("R")){
+	    				System.out.println("Process " + this.id +" Sending request to process "+ i);
+	    				RD[i].receiveRequest(this.id,this.N[this.id]);
+	    			}
+	    		}
+	    		i+=1;
+	    	}       
+    	}
     }
 
     /* Method for receiving a token request 
@@ -140,7 +141,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         //this.States[this.id] = "E";
         System.out.println("Process "+ this.id + " entering critical section");
         try {
-            Thread.sleep((int) Math.random()*5000);
+            Thread.sleep((int) (Math.random()*1000));
         } catch (InterruptedException e) {
         	System.out.println("Critical section interrupted");
         }
@@ -198,6 +199,13 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
     @Override
     public void setNumProc(int n) throws RemoteException{
     	this.numProc = n;
+    }
+    
+    private void printStates(){
+    	System.out.print("Process "+id+" ");
+    	for (int i=0; i<States.length; i++)
+    		System.out.print(States[i]);
+    	System.out.println();
     }
     
 }

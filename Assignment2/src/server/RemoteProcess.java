@@ -15,13 +15,14 @@ public class RemoteProcess implements Runnable{
 	
 	@Override
 	public void run() {
-		while(true)
+		for (int i=0; i<5; i++)
 		{
 			try
 			{
 				// every process sleeps for some random milliseconds before sending each new
 				//  request 
-				Thread.sleep((int)Math.random()*3000); 
+				Thread.sleep((int)(Math.random()*3000)); 
+				System.out.println("process "+ process.getId() +" working for time "+ i);
 				process.sendRequest();
 			}
 			catch (Exception e) {
