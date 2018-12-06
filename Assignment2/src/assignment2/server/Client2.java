@@ -23,7 +23,7 @@ public class Client2 {
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException, InterruptedException {
     	
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/clients3.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/clients4.txt"));
 
 
         String line = br.readLine();

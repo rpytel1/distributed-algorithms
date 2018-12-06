@@ -182,6 +182,7 @@ public class RemoteComponentImpl extends UnicastRemoteObject implements ICompone
         }
         if (flag) {
             States[id] = "H";
+            System.out.println(getStateStamp() +id + ":Holding the token");
         } else {
             for (int i = 1; i < numProc + 1; i++) {
                 // Cyclic check
