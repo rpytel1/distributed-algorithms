@@ -138,7 +138,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
 
     }
 
-    private void receiveAccept(Message message, Link link) {
+    private void receiveAccept(Message message, Link link) throws RemoteException {
     	testEdge = null;
     	if (link.getWeight() < weightBestAdjacent){
     		bestEdge = link;
@@ -147,22 +147,55 @@ public class Node extends UnicastRemoteObject implements IComponent {
     	report();
     }
 
-    private void report() {
+    private void report() throws RemoteException {
     	if (findCount==0 && testEdge.equals(null)){
     		this.state = NodeState.FOUND;
     		Message msg = new Message(MessageType.REPORT, weightBestAdjacent);
+    		nodes[inBranch.getReceiver(id)].receive(msg, inBranch);
     	}
     }
 
-    private void receiveReport(Message message, Link link) {
-
+    private void receiveReport(Message message, Link link) throws RemoteException {
+    	if (!link.equals(inBranch)){
+    		findCount -=1;
+    		if (message.getWeight() < weightBestAdjacent){
+    			weightBestAdjacent = message.getWeight();
+    			bestEdge = link;
+        	}
+    		report();
+    	}
+    	else{
+    		if (this.state == NodeState.FIND){
+    			// TODO: append message to the message queue
+    		}
+    		else{
+    			if (message.getWeight() > weightBestAdjacent)
+    				changeRoot();
+    			else{
+    				if (message.getWeight() == weightBestAdjacent && 
+    						weightBestAdjacent == Double.POSITIVE_INFINITY){
+    					// TODO: HALT
+    				}
+    			}
+    		}
+    	}
     }
 
     private void changeRoot() {
-
+    	if (bestEdge.getState() == LinkState.IN_MST){
+    		Message msg = new Message(MessageType.CHANGE_ROOT);
+    		// TODO: check if bestEdge is adjacent to the node
+    		nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
+    	}
+    	else{
+    		Message msg = new Message(MessageType.CONNECT, level);
+    		// TODO: check if bestEdge is adjacent to the node
+    		nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
+    		bestEdge.setState(LinkState.IN_MST);
+    	}
     }
 
     private void receiveChangeRoot(Message message, Link link) {
-
+    	changeRoot();
     }
 }

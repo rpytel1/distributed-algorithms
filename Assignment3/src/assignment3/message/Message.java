@@ -91,6 +91,14 @@ public class Message implements Serializable {
 		this.fName = fName;
 	}
 	
+	public double getWeight() {
+		return bestWeight;
+	}
+	
+	public void setWeight(double weight) {
+		this.bestWeight = weight;
+	}
+	
 	public NodeState getSenderState() {
 		return senderState;
 	}
