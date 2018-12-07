@@ -5,5 +5,6 @@ public enum MessageType {
     TEST,
     ACCEPT,
     CHANGE_ROOT,
-    CONNECT
+    CONNECT, 
+    REPORT
 }

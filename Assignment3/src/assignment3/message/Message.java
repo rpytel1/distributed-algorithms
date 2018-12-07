@@ -13,22 +13,37 @@ public class Message implements Serializable {
     
 
 	private double fName;
+	private double bestWeight;
     private NodeState senderState;
     
     public Message() {
     }
     
+ // constructor for ACCEPT, REJECT and CHANGE_ROOT messages
+    public Message(MessageType type) {
+    	this.type = type;
+    }
+    
+    // constructor for CONNECT messages
     public Message(MessageType type, int level) {
     	this.type = type;
     	this.level = level;
     }
     
+    // constructor for REPORT messages
+    public Message(MessageType type, double weight) {
+    	this.type = type;
+    	this.bestWeight = weight;
+    }
+    
+    // constructor for TEST messages
     public Message(MessageType type, int level, double name) {
     	this.type = type;
     	this.level = level;
     	fName = name;
     }
     
+    //constructor for INITIATE messages 
     public Message(MessageType type, int level, double name, NodeState s) {
     	this.type = type;
     	this.level = level;

@@ -26,7 +26,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private Queue<Link> links;
     private Queue<Link> moeCandidatesList;
 
-    private int weightBestAdjecent;
+    private double weightBestAdjacent;
     private Link bestEdge;
     private Link testEdge;
     private Link inBranch;
@@ -66,6 +66,9 @@ public class Node extends UnicastRemoteObject implements IComponent {
             case INITIATE:
                 receiveInitiate(message, link);
                 break;
+            case REPORT:
+                receiveReport(message, link);
+                break;
             case CHANGE_ROOT:
                 receiveChangeRoot(message, link);
                 break;
@@ -101,7 +104,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         state = message.getSenderState();
         inBranch = link;
         bestEdge = null;//TODO: NIL
-        weightBestAdjecent = -10000; // - INFINITY
+        weightBestAdjacent = -10000; // - INFINITY
 
         for (Link adjescentLink : this.links) {//TODO: Not sure if this is the correct one list of links
             if (adjescentLink != link && adjescentLink.getState() == LinkState.IN_MST) {
@@ -136,11 +139,19 @@ public class Node extends UnicastRemoteObject implements IComponent {
     }
 
     private void receiveAccept(Message message, Link link) {
-
+    	testEdge = null;
+    	if (link.getWeight() < weightBestAdjacent){
+    		bestEdge = link;
+    		weightBestAdjacent = link.getWeight();
+    	}
+    	report();
     }
 
     private void report() {
-
+    	if (findCount==0 && testEdge.equals(null)){
+    		this.state = NodeState.FOUND;
+    		Message msg = new Message(MessageType.REPORT, weightBestAdjacent);
+    	}
     }
 
     private void receiveReport(Message message, Link link) {
