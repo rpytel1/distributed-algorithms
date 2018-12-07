@@ -20,24 +20,21 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private NodeState state;
     private int level;
     private double fragmentName;
-
-    private Queue<Link> coreLinks;
-    private Queue<Link> links;
-    private Queue<Link> moeCandidatesList;
+    private Queue<Link> links; // the adjacent edges 	
 
     private double weightBestAdjacent;
-    private Link bestEdge;
+    private Link bestEdge; //the adjacent edge leading towards the best candidate for the MOE it knows about
     private Link testEdge;
-    private Link inBranch;
-    public int findCount;
+    private Link inBranch; //the adjacent edge leading to the core of the fragment
+    public int findCount; // maybe atomic implementation
 
-    protected Node(int id, Set<Link> links) throws RemoteException {
+    protected Node(int id, Queue<Link> links) throws RemoteException {
         super();
         this.id = id;
         state = NodeState.SLEEPING;
         level = 0;
         this.links = new PriorityQueue<Link>(links);
-        moeCandidatesList = new PriorityQueue<Link>(links);
+        fragmentName = this.links.peek().getWeight();
     }
 
     public void wakeUp() throws RemoteException {
@@ -98,6 +95,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private void receiveConnect(Message message, Link link) throws RemoteException {
         if (state == NodeState.SLEEPING)
             wakeUp();
+        // the case that l < l' and fragment F is absorbed by F'
         if (message.getLevel() < this.level) {
             link.setState(LinkState.IN_MST); // TODO: to be checked
             Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
@@ -107,7 +105,10 @@ public class Node extends UnicastRemoteObject implements IComponent {
         } else {
             if (link.getState() == LinkState.CANDIDATE_IN_MST) {
                 // TODO: append message to the message queue
+            	// probably receiveConnect is invoked again with a delay 
+            	// and when the condition is met the message is received
             } else {
+            	// the merging case: l == l' and MOE == MOE'
                 Message msg = new Message(MessageType.INITIATE, level + 1, link.getWeight(), NodeState.FIND);
                 nodes[link.getReceiver(id)].receive(msg, link);
             }
@@ -118,8 +119,8 @@ public class Node extends UnicastRemoteObject implements IComponent {
         level = message.getLevel();
         fragmentName = message.getfName();
         state = message.getSenderState();
-        inBranch = link;
-        bestEdge = null;//TODO: NIL
+        inBranch = link; // the adjacent edge leading to the core of the fragment
+        bestEdge = null;
         weightBestAdjacent = Double.POSITIVE_INFINITY;
 
         for (Link adjescentLink : this.links) {//TODO: Not sure if this is the correct one list of links
@@ -127,7 +128,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                 Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
                 nodes[adjescentLink.getReceiver(id)].receive(msg, adjescentLink);
                 if (state == NodeState.FIND) {
-                    findCount = findCount + 1;
+                    findCount = findCount + 1; // the messages sent
                 }
             }
         }
@@ -137,8 +138,8 @@ public class Node extends UnicastRemoteObject implements IComponent {
     }
 
     private void test() throws RemoteException {
-        if (links.stream().anyMatch(p -> p.getState() == LinkState.CANDIDATE_IN_MST)) {//TODO: check if adjecent links are the ones
-            testEdge = links.stream().min(new LinkComparator()).get();
+        if (links.stream().anyMatch(p -> p.getState() == LinkState.CANDIDATE_IN_MST)) {
+            testEdge = links.stream().filter(p->p.getState()== LinkState.CANDIDATE_IN_MST).min(new LinkComparator()).get();
             Message msg = new Message(MessageType.TEST, level, fragmentName);
             nodes[testEdge.getReceiver(id)].receive(msg, testEdge);
         } else {
@@ -153,15 +154,19 @@ public class Node extends UnicastRemoteObject implements IComponent {
         }
         if (message.getLevel() > level) {
             //TODO: append message to the queue
+        	// receiving again with a delay
         } else {
-            if (message.getfName() != fragmentName) {
+        	// if the name of the fragment is different then a possible MOE is identified
+            if (message.getfName() != fragmentName) { 
                 Message msg = new Message(MessageType.ACCEPT);
                 nodes[link.getReceiver(id)].receive(msg, link);
             } else {
                 if (link.getState() == LinkState.CANDIDATE_IN_MST) {
-                    link.setState(LinkState.NOT_IN_MST);//TODO: think about local copies
+                    link.setState(LinkState.NOT_IN_MST); //TODO: think about local copies
                 }
-                if (link.getWeight() == testEdge.getWeight()) {//TODO: think if Link does not require some id
+                // if the node hasn't set this edge as testEdge then it sends a reject 
+                // because they are in the same fragment with the sender
+                if (link.compareTo(testEdge)==0) {
                     Message msg = new Message(MessageType.REJECT);
                     nodes[link.getReceiver(id)].receive(msg, link);
                 } else {
@@ -176,13 +181,13 @@ public class Node extends UnicastRemoteObject implements IComponent {
         if (link.getState() == LinkState.CANDIDATE_IN_MST) {
             link.setState(LinkState.NOT_IN_MST);
         }
-        test();
+        test(); // to find another possible MOE
     }
 
     private void receiveAccept(Message message, Link link) throws RemoteException {
     	testEdge = null;
     	if (link.getWeight() < weightBestAdjacent){
-    		bestEdge = link;
+    		bestEdge = link; 
     		weightBestAdjacent = link.getWeight();
     	}
     	report();
