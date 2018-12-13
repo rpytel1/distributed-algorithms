@@ -48,8 +48,9 @@ public class Client1 {
             	localIDS.add(i);
         	}
         	else{
-        		registry.bind("//145.94.186.211:"+Constant.RMI_PORT+"/"+split_line[0], new Node(i, new PriorityQueue<Link>(links.get(i))));
-        		local[i] = 0; 
+        		registry.bind("//145.94.233.58:"+Constant.RMI_PORT+"/"+split_line[0], new Node(i, new PriorityQueue<Link>(links.get(i))));
+        		local[i] = 0;
+
         	}
         	i++;
         }
@@ -117,6 +118,6 @@ public class Client1 {
         System.out.println("Press enter to continue");
         Scanner scan = new Scanner(System.in);
         scan.nextLine();
-        for (int i = 0; i < localProc; i+=2) myThreads[i].start();
+         myThreads[0].start();
     }
 }

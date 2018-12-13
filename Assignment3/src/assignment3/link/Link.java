@@ -21,6 +21,13 @@ public class Link implements Serializable, Comparable{
     	weight = w;
     	delay = d;
     }
+    public Link(Link link){
+        state = link.getState();
+        from = link.getFrom();
+        to = link.getTo();
+        weight = link.getWeight();
+        delay = link.getDelay();
+    }
 
     public LinkState getState() {
         return state;
@@ -70,6 +77,9 @@ public class Link implements Serializable, Comparable{
 
 	@Override
 	public int compareTo(Object arg0) {
+        if(arg0 == null){
+            return -1;
+        }
 		double otherWeight = ((Link) arg0).getWeight();
 		if (weight < otherWeight)
 			return -1;

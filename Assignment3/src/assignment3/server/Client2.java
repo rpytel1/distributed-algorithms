@@ -48,7 +48,7 @@ public class Client2 {
     }
     
     public static void setRegistry() throws NotBoundException, NumberFormatException, IOException{
-    	Registry registry = LocateRegistry.getRegistry("145.94.233.17", Constant.RMI_PORT);
+    	Registry registry = LocateRegistry.getRegistry("145.94.186.211", Constant.RMI_PORT);
         RMI_IDS = new IComponent[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[numProc]; // and numProc number of threads are created
         for(int i=0; i<numProc; i++){
