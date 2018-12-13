@@ -6,6 +6,7 @@ import assignment3.link.LinkState;
 import assignment3.message.Message;
 import assignment3.message.MessageType;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
@@ -40,12 +41,24 @@ public class Node extends UnicastRemoteObject implements IComponent {
     @Override
     public void wakeUp() throws RemoteException {
         Link edge = links.peek();
-        edge.setState(LinkState.IN_MST); // TODO: to be checked
+        edge.setState(LinkState.IN_MST);
         level = 0;
         state = NodeState.FOUND;
         findCount = 0;
         Message msg = new Message(MessageType.CONNECT, 0);
-        nodes[edge.getReceiver(id)].receive(msg, edge);
+        new java.util.Timer().schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        try {
+                            nodes[edge.getReceiver(id)].receive(msg, edge);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                100
+        );
     }
 
     @Override
@@ -89,10 +102,10 @@ public class Node extends UnicastRemoteObject implements IComponent {
         this.links = new PriorityQueue<>(linkLists);
     }
 
-    public void send(Message message, Link link) {
+    public void send(Message message, Link link) throws RemoteException {
 
     }
-    
+
     @Override
     public void receiveConnect(Message message, Link link) throws RemoteException {
         if (state == NodeState.SLEEPING)
@@ -101,16 +114,38 @@ public class Node extends UnicastRemoteObject implements IComponent {
         if (message.getLevel() < this.level) {
             link.setState(LinkState.IN_MST); // TODO: to be checked
             Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
-            nodes[link.getReceiver(id)].receive(msg, link);
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                nodes[link.getReceiver(id)].receive(msg, link);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    100
+            );
             if (state == NodeState.FIND)
                 findCount++;
         } else {
             if (link.getState() == LinkState.CANDIDATE_IN_MST) {
                 // TODO: append message to the message queue
-            	// probably receiveConnect is invoked again with a delay 
-            	// and when the condition is met the message is received
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    nodes[id].receiveConnect(message, link);
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        300);
             } else {
-            	// the merging case: l == l' and MOE == MOE'
+                // the merging case: l == l' and MOE == MOE'
                 Message msg = new Message(MessageType.INITIATE, level + 1, link.getWeight(), NodeState.FIND);
                 nodes[link.getReceiver(id)].receive(msg, link);
             }
@@ -128,7 +163,19 @@ public class Node extends UnicastRemoteObject implements IComponent {
         for (Link adjescentLink : this.links) {//TODO: Not sure if this is the correct one list of links
             if (adjescentLink != link && adjescentLink.getState() == LinkState.IN_MST) {
                 Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
-                nodes[adjescentLink.getReceiver(id)].receive(msg, adjescentLink);
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    nodes[link.getReceiver(id)].receive(msg, adjescentLink);
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        100
+                );
                 if (state == NodeState.FIND) {
                     findCount = findCount + 1; // the messages sent
                 }
@@ -141,15 +188,27 @@ public class Node extends UnicastRemoteObject implements IComponent {
 
     private void test() throws RemoteException {
         if (links.stream().anyMatch(p -> p.getState() == LinkState.CANDIDATE_IN_MST)) {
-            testEdge = links.stream().filter(p->p.getState()== LinkState.CANDIDATE_IN_MST).min(new LinkComparator()).get();
+            testEdge = links.stream().filter(p -> p.getState() == LinkState.CANDIDATE_IN_MST).min(new LinkComparator()).get();
             Message msg = new Message(MessageType.TEST, level, fragmentName);
-            nodes[testEdge.getReceiver(id)].receive(msg, testEdge);
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                nodes[testEdge.getReceiver(id)].receive(msg, testEdge);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    100
+            );
         } else {
             testEdge = null;
             report();
         }
     }
-    
+
     @Override
     public void receiveTest(Message message, Link link) throws RemoteException {
         if (state == NodeState.SLEEPING) {
@@ -157,21 +216,57 @@ public class Node extends UnicastRemoteObject implements IComponent {
         }
         if (message.getLevel() > level) {
             //TODO: append message to the queue
-        	// receiving again with a delay
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                nodes[id].receiveTest(message, link);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    300);
+            // receiving again with a delay
         } else {
-        	// if the name of the fragment is different then a possible MOE is identified
-            if (message.getfName() != fragmentName) { 
+            // if the name of the fragment is different then a possible MOE is identified
+            if (message.getfName() != fragmentName) {
                 Message msg = new Message(MessageType.ACCEPT);
-                nodes[link.getReceiver(id)].receive(msg, link);
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    nodes[link.getReceiver(id)].receive(msg, link);
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        100
+                );
             } else {
                 if (link.getState() == LinkState.CANDIDATE_IN_MST) {
                     link.setState(LinkState.NOT_IN_MST); //TODO: think about local copies
                 }
                 // if the node hasn't set this edge as testEdge then it sends a reject 
                 // because they are in the same fragment with the sender
-                if (link.compareTo(testEdge)==0) {
+                if (link.compareTo(testEdge) == 0) {
                     Message msg = new Message(MessageType.REJECT);
-                    nodes[link.getReceiver(id)].receive(msg, link);
+                    new java.util.Timer().schedule(
+                            new java.util.TimerTask() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        nodes[link.getReceiver(id)].receive(msg, link);
+                                    } catch (RemoteException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            },
+                            100
+                    );
                 } else {
                     test();
                 }
@@ -188,68 +283,102 @@ public class Node extends UnicastRemoteObject implements IComponent {
     }
 
     private void receiveAccept(Message message, Link link) throws RemoteException {
-    	testEdge = null;
-    	if (link.getWeight() < weightBestAdjacent){
-    		bestEdge = link; 
-    		weightBestAdjacent = link.getWeight();
-    	}
-    	report();
+        testEdge = null;
+        if (link.getWeight() < weightBestAdjacent) {
+            bestEdge = link;
+            weightBestAdjacent = link.getWeight();
+        }
+        report();
     }
 
     private void report() throws RemoteException {
-    	if (findCount==0 && testEdge.equals(null)){
-    		this.state = NodeState.FOUND;
-    		Message msg = new Message(MessageType.REPORT, weightBestAdjacent);
-    		nodes[inBranch.getReceiver(id)].receive(msg, inBranch);
-    	}
+        if (findCount == 0 && testEdge.equals(null)) {
+            this.state = NodeState.FOUND;
+            Message msg = new Message(MessageType.REPORT, weightBestAdjacent);
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                nodes[inBranch.getReceiver(id)].receive(msg, inBranch);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    100
+            );
+        }
     }
-    
     @Override
     public void receiveReport(Message message, Link link) throws RemoteException {
-    	if (!link.equals(inBranch)){
-    		findCount -=1;
-    		if (message.getWeight() < weightBestAdjacent){
-    			weightBestAdjacent = message.getWeight();
-    			bestEdge = link;
-        	}
-    		report();
-    	}
-    	else{
-    		if (this.state == NodeState.FIND){
-    			// TODO: append message to the message queue
-    		}
-    		else{
-    			if (message.getWeight() > weightBestAdjacent)
-    				changeRoot();
-    			else{
-    				if (message.getWeight() == weightBestAdjacent &&
-    						weightBestAdjacent == Double.POSITIVE_INFINITY){
-    					// TODO: HALT
-    				}
-    			}
-    		}
-    	}
+        if (!link.equals(inBranch)) {
+            findCount -= 1;
+            if (message.getWeight() < weightBestAdjacent) {
+                weightBestAdjacent = message.getWeight();
+                bestEdge = link;
+            }
+            report();
+        } else {
+            if (this.state == NodeState.FIND) {
+                // TODO: append message to the message queue
+                new java.util.Timer().schedule(
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                try {
+                                    nodes[id].receiveTest(message, link);
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        500);
+            } else {
+                if (message.getWeight() > weightBestAdjacent)
+                    changeRoot();
+                else {
+                    if (message.getWeight() == weightBestAdjacent &&
+                            weightBestAdjacent == Double.POSITIVE_INFINITY) {
+                        System.out.println("HAAAAAAAAAAAAAAAAAAAAAAAAAALT");
+                        // TODO: HALT
+                    }
+                }
+            }
+        }
     }
 
-    private void changeRoot() {
-    	if (bestEdge.getState() == LinkState.IN_MST){
-    		Message msg = new Message(MessageType.CHANGE_ROOT);
-    		// TODO: check if bestEdge is adjacent to the node
-    		nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
-    	}
-    	else{
-    		Message msg = new Message(MessageType.CONNECT, level);
-    		// TODO: check if bestEdge is adjacent to the node
-    		nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
-    		bestEdge.setState(LinkState.IN_MST);
-    	}
+    private void changeRoot() throws RemoteException {
+        if (bestEdge.getState() == LinkState.IN_MST) {
+            Message msg = new Message(MessageType.CHANGE_ROOT);
+            // TODO: check if bestEdge is adjacent to the node
+            nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
+        } else {
+            Message msg = new Message(MessageType.CONNECT, level);
+            // TODO: check if bestEdge is adjacent to the node
+            new java.util.Timer().schedule(
+                    new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
+                                bestEdge.setState(LinkState.IN_MST);
+                            } catch (RemoteException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },
+                    100
+            );
+
+        }
     }
-    
+
     @Override
-    public void receiveChangeRoot(Message message, Link link) {
-    	changeRoot();
+    public void receiveChangeRoot(Message message, Link link) throws RemoteException {
+        changeRoot();
     }
-    
+
     @Override
     public void setEntities(IComponent[] entities) throws RemoteException {
         nodes = entities;
