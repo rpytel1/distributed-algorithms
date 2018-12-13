@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class Node extends UnicastRemoteObject implements IComponent {
 
-    private Node[] nodes;
+    private IComponent[] nodes;
 
     private int id;
     private NodeState state;
@@ -28,7 +28,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private Link inBranch; //the adjacent edge leading to the core of the fragment
     public int findCount; // maybe atomic implementation
 
-    protected Node(int id, Queue<Link> links) throws RemoteException {
+    public Node(int id, Queue<Link> links) throws RemoteException {
         super();
         this.id = id;
         state = NodeState.SLEEPING;
@@ -37,6 +37,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         fragmentName = this.links.peek().getWeight();
     }
 
+    @Override
     public void wakeUp() throws RemoteException {
         Link edge = links.peek();
         edge.setState(LinkState.IN_MST); // TODO: to be checked
@@ -47,7 +48,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         nodes[edge.getReceiver(id)].receive(msg, edge);
     }
 
-
+    @Override
     public void receive(Message message, Link link) throws RemoteException {
         updateLinks(link);
         switch (message.getType()) {
@@ -91,8 +92,9 @@ public class Node extends UnicastRemoteObject implements IComponent {
     public void send(Message message, Link link) {
 
     }
-
-    private void receiveConnect(Message message, Link link) throws RemoteException {
+    
+    @Override
+    public void receiveConnect(Message message, Link link) throws RemoteException {
         if (state == NodeState.SLEEPING)
             wakeUp();
         // the case that l < l' and fragment F is absorbed by F'
@@ -147,8 +149,9 @@ public class Node extends UnicastRemoteObject implements IComponent {
             report();
         }
     }
-
-    private void receiveTest(Message message, Link link) throws RemoteException {
+    
+    @Override
+    public void receiveTest(Message message, Link link) throws RemoteException {
         if (state == NodeState.SLEEPING) {
             wakeUp();
         }
@@ -200,8 +203,9 @@ public class Node extends UnicastRemoteObject implements IComponent {
     		nodes[inBranch.getReceiver(id)].receive(msg, inBranch);
     	}
     }
-
-    private void receiveReport(Message message, Link link) throws RemoteException {
+    
+    @Override
+    public void receiveReport(Message message, Link link) throws RemoteException {
     	if (!link.equals(inBranch)){
     		findCount -=1;
     		if (message.getWeight() < weightBestAdjacent){
@@ -240,8 +244,14 @@ public class Node extends UnicastRemoteObject implements IComponent {
     		bestEdge.setState(LinkState.IN_MST);
     	}
     }
-
-    private void receiveChangeRoot(Message message, Link link) {
+    
+    @Override
+    public void receiveChangeRoot(Message message, Link link) {
     	changeRoot();
+    }
+    
+    @Override
+    public void setEntities(IComponent[] entities) throws RemoteException {
+        nodes = entities;
     }
 }

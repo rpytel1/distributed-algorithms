@@ -13,6 +13,14 @@ public class Link implements Serializable, Comparable{
 
     public Link() {
     }
+    
+    public Link(LinkState s, int id1, int id2, double w, int d) {
+    	state = s;
+    	from = id1;
+    	to = id2;
+    	weight = w;
+    	delay = d;
+    }
 
     public LinkState getState() {
         return state;

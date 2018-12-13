@@ -15,20 +15,18 @@ public class RemoteProcess implements Runnable {
 
     @Override
     public void run() {
-        for (int i = 0; i < 3; i++) {
-            {
-                try {
-                    // every process sleeps for some random milliseconds before sending each new
-                    //  request
-                    Thread.sleep((int) (Math.random() * 1000));
-                    //TODO:add init method
-                    Thread.sleep(25000);
-                } catch (Exception e) {
-                    System.err.println("Client exception: " + e.toString());
-                    e.printStackTrace();
-                }
-            }
+        
+        try {
+            // every process sleeps for some random milliseconds before sending each new
+            //  request
+            //Thread.sleep((int) (Math.random() * 1000));
+            //TODO:add init method
+            //Thread.sleep(25000);
+        	process.wakeUp();
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
         }
-
+        
     }
 }
