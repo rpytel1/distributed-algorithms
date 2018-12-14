@@ -10,6 +10,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -27,7 +28,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private Link bestEdge; //the adjacent edge leading towards the best candidate for the MOE it knows about
     private Link testEdge;
     private Link inBranch; //the adjacent edge leading to the core of the fragment
-    public int findCount; // maybe atomic implementation
+    public AtomicInteger findCount; // maybe atomic implementation
 
     public Node(int id, Queue<Link> links) throws RemoteException {
         super();
@@ -43,12 +44,13 @@ public class Node extends UnicastRemoteObject implements IComponent {
         System.out.println(id + ":Wakeup");
 
         Link edge = links.peek();
+        System.out.println(id + ": changing link to " + edge.getReceiver(id) + " to IN_MST");
         edge.setState(LinkState.IN_MST);
         level = 0;
         state = NodeState.FOUND;
-        findCount = 0;
+        findCount = new AtomicInteger(0);
         Message msg = new Message(MessageType.CONNECT, 0);
-        System.out.println(id+":Sending Connect to "+edge.getReceiver(id));
+        System.out.println(id + ":Sending Connect to " + edge.getReceiver(id));
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
@@ -60,34 +62,34 @@ public class Node extends UnicastRemoteObject implements IComponent {
                         }
                     }
                 },
-                0
+                10
         );
     }
 
     @Override
     public void receive(Message message, Link link) throws RemoteException {
-        updateLinks(link);
+        Link myLink = getMyLink(link);
         switch (message.getType()) {
             case TEST:
-                receiveTest(message, link);
+                receiveTest(message, myLink);
                 break;
             case ACCEPT:
-                receiveAccept(message, link);
+                receiveAccept(message, myLink);
                 break;
             case CONNECT:
-                receiveConnect(message, link);
+                receiveConnect(message, myLink);
                 break;
             case INITIATE:
-                receiveInitiate(message, link);
+                receiveInitiate(message, myLink);
                 break;
             case REPORT:
-                receiveReport(message, link);
+                receiveReport(message, myLink);
                 break;
             case REJECT:
-                receiveReject(message, link);
+                receiveReject(message, myLink);
                 break;
             case CHANGE_ROOT:
-                receiveChangeRoot(message, link);
+                receiveChangeRoot(message, myLink);
                 break;
         }
     }
@@ -109,6 +111,17 @@ public class Node extends UnicastRemoteObject implements IComponent {
 
     }
 
+    private Link getMyLink(Link link) {
+        List<Link> linkLists = new ArrayList<>(links);
+        Link linkToUpdate = new Link();
+        for (Link linkEntry : linkLists) {
+            if (linkEntry.compareTo(link) == 0) {
+                linkToUpdate = linkEntry;
+            }
+        }
+        return linkToUpdate;
+    }
+
     @Override
     public void receiveConnect(Message message, Link link) throws RemoteException {
         System.out.println(id + ":Receive Connect from " + link.getReceiver(id));
@@ -116,6 +129,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
             wakeUp();
         // the case that l < l' and fragment F is absorbed by F'
         if (message.getLevel() < this.level) {
+            System.out.println(id + ": changing link to " + link.getReceiver(id) + " to IN_MST");
             link.setState(LinkState.IN_MST); // TODO: to be checked
             Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
             new java.util.Timer().schedule(
@@ -132,8 +146,9 @@ public class Node extends UnicastRemoteObject implements IComponent {
                     },
                     10
             );
-            if (state == NodeState.FIND)
-                findCount++;
+            if (state == NodeState.FIND) {
+                findCount.getAndIncrement();
+            }
         } else {
             if (link.getState() == LinkState.CANDIDATE_IN_MST) {
                 System.out.println(id + "Connect Appended to queue");
@@ -165,7 +180,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                                 }
                             }
                         },
-                        0);
+                        10);
             }
         }
     }
@@ -180,7 +195,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         weightBestAdjacent = Double.POSITIVE_INFINITY;
 
         for (Link adjescentLink : this.links) {//TODO: Not sure if this is the correct one list of links
-            if (adjescentLink != link && adjescentLink.getState() == LinkState.IN_MST) {
+            if (adjescentLink.compareTo(link) != 0 && adjescentLink.getState() == LinkState.IN_MST) {
                 Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
                 System.out.println(id + ": Sending Initiate to " + adjescentLink.getReceiver(id));
                 Link copy = new Link(adjescentLink);
@@ -195,10 +210,11 @@ public class Node extends UnicastRemoteObject implements IComponent {
                                 }
                             }
                         },
-                        0
+                        10
                 );
                 if (state == NodeState.FIND) {
-                    findCount = findCount + 1; // the messages sent
+                    findCount.getAndIncrement();
+                    // the messages sent
                 }
             }
         }
@@ -213,22 +229,26 @@ public class Node extends UnicastRemoteObject implements IComponent {
             testEdge = links.stream().filter(p -> p.getState() == LinkState.CANDIDATE_IN_MST).min(new LinkComparator()).get();
             Message msg = new Message(MessageType.TEST, level, fragmentName);
             Link copy = new Link(testEdge);
+            System.out.println(id + ":Sending Receive test to " + testEdge.getReceiver(id));
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
                         public void run() {
                             try {
-                                System.out.println(id + ":Sending Receive test to " + copy.getReceiver(id));
-                                nodes[copy.getReceiver(id)].receive(msg, copy);
+                                nodes[copy.getReceiver(id)].receive(msg, testEdge);
                             } catch (RemoteException e) {
                                 e.printStackTrace();
                             }
                         }
                     },
-                    0
+                    10
             );
         } else {
-            System.out.println(id + "Changing test edge ");
+            if (testEdge != null) {
+                System.out.println(id + "Changing test edge " + testEdge.getReceiver(id) + "to null");
+            } else {
+                System.out.println(id + "Changing test edge to null");
+            }
             testEdge = null;
             report();
         }
@@ -276,11 +296,12 @@ public class Node extends UnicastRemoteObject implements IComponent {
                 );
             } else {
                 if (link.getState() == LinkState.CANDIDATE_IN_MST) {
+                    System.out.println(id + ": changing link to " + link.getReceiver(id) + " to NOT_IN_MST");
                     link.setState(LinkState.NOT_IN_MST); //TODO: think about local copies
                 }
                 // if the node hasn't set this edge as testEdge then it sends a reject 
                 // because they are in the same fragment with the sender
-                if (link.compareTo(testEdge) == 0) {
+                if (link.compareTo(testEdge) != 0) {
                     System.out.println(id + ":Sending Reject to " + link.getReceiver(id));
                     Message msg = new Message(MessageType.REJECT);
                     new java.util.Timer().schedule(
@@ -294,7 +315,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                                     }
                                 }
                             },
-                            0
+                            10
                     );
                 } else {
                     test();
@@ -307,6 +328,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private void receiveReject(Message message, Link link) throws RemoteException {
         System.out.println(id + ":Receive Reject from " + link.getReceiver(id));
         if (link.getState() == LinkState.CANDIDATE_IN_MST) {
+            System.out.println(id + ": changing link to " + link.getReceiver(id) + " to NOT_IN_MST");
             link.setState(LinkState.NOT_IN_MST);
         }
         test(); // to find another possible MOE
@@ -323,10 +345,11 @@ public class Node extends UnicastRemoteObject implements IComponent {
     }
 
     private void report() throws RemoteException {
-        System.out.println(id + ":Report find_count:" + findCount + " testEdge:" + testEdge);
-        if (findCount == 0 && testEdge == null) {
+        System.out.println(id + ":Report find_count:" + findCount.get() + " testEdge:" + testEdge);
+        if (findCount.get() == 0 && testEdge == null) {
             this.state = NodeState.FOUND;
             Message msg = new Message(MessageType.REPORT, weightBestAdjacent);
+            System.out.println(id + ":Sending Report to " + inBranch.getReceiver(id));
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -338,16 +361,16 @@ public class Node extends UnicastRemoteObject implements IComponent {
                             }
                         }
                     },
-                    0
+                    10
             );
         }
     }
 
     @Override
     public void receiveReport(Message message, Link link) throws RemoteException {
-        System.out.println(id + ":Receive Report");
-        if (!link.equals(inBranch)) {
-            findCount -= 1;
+        System.out.println(id + ":Receive Report from " + link.getReceiver(id));
+        if (link.compareTo(inBranch) != 0) {
+            findCount.getAndDecrement();
             if (message.getWeight() < weightBestAdjacent) {
                 weightBestAdjacent = message.getWeight();
                 bestEdge = link;
@@ -374,7 +397,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                 else {
                     if (message.getWeight() == weightBestAdjacent &&
                             weightBestAdjacent == Double.POSITIVE_INFINITY) {
-                        System.out.println("HAAAAAAAAAAAAAAAAAAAAAAAAAALT");
+                        System.out.println(id+":HAAAAAAAAAAAAAAAAAAAAAAAAAALT");
                         // TODO: HALT
                     }
                 }
@@ -398,13 +421,14 @@ public class Node extends UnicastRemoteObject implements IComponent {
                         public void run() {
                             try {
                                 nodes[bestEdge.getReceiver(id)].receiveChangeRoot(msg, bestEdge);
+                                System.out.println(id + ": changing bestEdge to " + bestEdge.getReceiver(id) + " to IN_MST");
                                 bestEdge.setState(LinkState.IN_MST);
                             } catch (RemoteException e) {
                                 e.printStackTrace();
                             }
                         }
                     },
-                    0
+                    10
             );
 
         }
