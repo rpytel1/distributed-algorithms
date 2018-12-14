@@ -31,7 +31,7 @@ public class Client1 {
     	links = new HashMap<Integer, List<Link>>();
     	initializeEdges();
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/nodes.txt")); 
+        BufferedReader br = new BufferedReader(new FileReader("tests/nodes1.txt"));
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
@@ -63,7 +63,7 @@ public class Client1 {
     }
     
     public static void initializeEdges() throws IOException{
-    	BufferedReader br = new BufferedReader(new FileReader("tests/edges.txt")); 
+    	BufferedReader br = new BufferedReader(new FileReader("tests/edges1.txt"));
         String line;
         int node1;
         int node2;
