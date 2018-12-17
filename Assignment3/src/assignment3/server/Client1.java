@@ -119,5 +119,6 @@ public class Client1 {
         Scanner scan = new Scanner(System.in);
         scan.nextLine();
          myThreads[0].start();
+		myThreads[1].start();
     }
 }

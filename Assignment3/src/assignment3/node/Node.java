@@ -175,8 +175,11 @@ public class Node extends UnicastRemoteObject implements IComponent {
                             @Override
                             public void run() {
                                 try {
+                                    Thread.sleep(30);//It is added to preserve order of messages sended from certain node
                                     nodes[link.getReceiver(id)].receive(msg, link);
                                 } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
                             }
@@ -224,7 +227,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         }
     }
 
-    private void test() throws RemoteException {
+    private synchronized void test() throws RemoteException {
         System.out.println(id + ":Test");
         if (links.stream().anyMatch(p -> p.getState() == LinkState.CANDIDATE_IN_MST)) {
             testEdge = links.stream().filter(p -> p.getState() == LinkState.CANDIDATE_IN_MST).min(new LinkComparator()).get();
@@ -341,7 +344,6 @@ public class Node extends UnicastRemoteObject implements IComponent {
         testEdge = null;
         System.out.println(id + ": Accept " + link.getWeight() + " " + weightBestAdjacent);
         if (link.getWeight() < weightBestAdjacent) {
-            System.out.println(id + ": BestEdge changed from " + bestEdge.getReceiver(id) + "to  " + bestEdge.getReceiver(id));
             bestEdge = link;
             weightBestAdjacent = link.getWeight();
         }
@@ -373,6 +375,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     @Override
     public synchronized void receiveReport(Message message, Link link) throws RemoteException {
         System.out.println(id + ":Receive Report from " + link.getReceiver(id)+" state:"+state);
+        System.out.println(findCount.get());
         if (link.compareTo(inBranch) != 0) {
             findCount.getAndDecrement();
             System.out.println(id + ": Report " + message.getWeight() + " " + weightBestAdjacent);
@@ -411,7 +414,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         }
     }
 
-    private void changeRoot() throws RemoteException {
+    private synchronized void changeRoot() throws RemoteException {
         System.out.println(id + ":Change Root");
 
         if (bestEdge.getState() == LinkState.IN_MST) {
