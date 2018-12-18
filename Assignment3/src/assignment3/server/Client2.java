@@ -4,11 +4,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
+import java.util.PriorityQueue;
 import java.util.Scanner;
+
+import assignment3.link.Link;
 import assignment3.node.IComponent;
+import assignment3.node.Node;
 
 public class Client2 {
 	private static IComponent[] RMI_IDS; // Array with the remote processes
@@ -48,7 +53,18 @@ public class Client2 {
     }
     
     public static void setRegistry() throws NotBoundException, NumberFormatException, IOException{
-    	Registry registry = LocateRegistry.getRegistry("145.94.186.211", Constant.RMI_PORT);
+    	boolean success = false;
+    	Registry registry = null;
+		while (!success){
+    		try{
+    			registry = LocateRegistry.getRegistry("145.94.186.211", Constant.RMI_PORT);
+    			success = true;
+    		}
+    		catch (RemoteException e) {
+                e.printStackTrace();
+            }
+		}
+    	//Registry registry = LocateRegistry.getRegistry("145.94.186.211", Constant.RMI_PORT);
         RMI_IDS = new IComponent[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[numProc]; // and numProc number of threads are created
         for(int i=0; i<numProc; i++){
