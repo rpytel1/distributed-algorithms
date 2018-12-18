@@ -32,7 +32,7 @@ public class Client1 {
     	links = new HashMap<Integer, List<Link>>();
     	initializeEdges();
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/nodes2.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/nodes1.txt"));
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
@@ -52,7 +52,7 @@ public class Client1 {
         		boolean success = false;
         		while (!success){
 	        		try{
-	        			registry.bind("//145.94.233.58:"+Constant.RMI_PORT+"/"+split_line[0], new Node(i, new PriorityQueue<Link>(links.get(i))));
+	        			registry.bind("//145.94.234.109:"+Constant.RMI_PORT+"/"+split_line[0], new Node(i, new PriorityQueue<Link>(links.get(i))));
 	        			success = true;
 	        		}
 	        		catch (RemoteException e) {
@@ -65,15 +65,12 @@ public class Client1 {
         	i++;
         }
         br.close();
-        System.out.println("Press enter to continue");
-        Scanner scan = new Scanner(System.in);
-        scan.nextLine();
         setRegistry();
         System.out.println("Client 1 started");
     }
     
     public static void initializeEdges() throws IOException{
-    	BufferedReader br = new BufferedReader(new FileReader("tests/edges2.txt"));
+    	BufferedReader br = new BufferedReader(new FileReader("tests/edges1.txt"));
         String line;
         int node1;
         int node2;
@@ -124,10 +121,7 @@ public class Client1 {
             RemoteProcess p = new RemoteProcess(RMI_IDS[localIDS.get(i)]);
             myThreads[i] = new Thread(p); // and a new thread is created 
         }
-        
-        System.out.println("Press enter to continue");
-        Scanner scan = new Scanner(System.in);
-        scan.nextLine();
+
         myThreads[0].start();
 		myThreads[1].start();
     }
