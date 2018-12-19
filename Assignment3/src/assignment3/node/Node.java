@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class Node extends UnicastRemoteObject implements IComponent {
 
-    private IComponent[] nodes;
+    private IComponent[] nodes = null;
 
     private int id;
     private NodeState state;
@@ -518,7 +518,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
     }
     
     @Override
-    public void isAlive() throws RemoteException{
-    	System.out.println("Node "+ id+ " is up");
+    public IComponent[] getEntities() throws RemoteException{
+    	return nodes;
     }
 }

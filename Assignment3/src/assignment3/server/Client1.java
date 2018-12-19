@@ -143,18 +143,10 @@ public class Client1 {
         //Scanner scan = new Scanner(System.in);
         //scan.nextLine();
         for (int i=0; i<numProc; i++){
-	        success = false;
-	        while(!success){
-	        	try{
-	        		RMI_IDS[localIDS.get(i)].isAlive();
-	        		success = true;
-	        	}
-	        	catch(RemoteException e){
-	        		System.err.println("Client 2 not initialized its processes yet");
-	        		//e.printStackTrace();
-	        	}
+	        while(RMI_IDS[i].getEntities()==null){
+	        	System.err.println("Node "+i+" not initialized yet");
 	        }
-        }
+	    }
         myThreads[0].start();
     }
 }
