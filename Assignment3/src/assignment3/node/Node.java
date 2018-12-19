@@ -29,6 +29,25 @@ public class Node extends UnicastRemoteObject implements IComponent {
     private Link testEdge;
     private Link inBranch; //the adjacent edge leading to the core of the fragment
     public AtomicInteger findCount; // maybe atomic implementation
+    public AtomicInteger ConnectSent;
+    public AtomicInteger TestSent;
+    public AtomicInteger InitiateSent;
+    public AtomicInteger ReportSent;
+    public AtomicInteger AcceptSent;
+    public AtomicInteger RejectSent;
+    public AtomicInteger ChangeRootSent;
+    public AtomicInteger ConnectReceived;
+    public AtomicInteger TestReceived;
+    public AtomicInteger InitiateReceived;
+    public AtomicInteger ReportReceived;
+    public AtomicInteger AcceptReceived;
+    public AtomicInteger RejectReceived;
+    public AtomicInteger ChangeRootReceived;
+    public AtomicInteger merges;
+    public AtomicInteger absorbs;
+    public Map<Double,Link> cores;
+    public Map<Double,Link> mstEdges;
+    public Map<Integer,List<Link>> levels;
 
     public Node(int id, Queue<Link> links) throws RemoteException {
         super();
@@ -37,13 +56,36 @@ public class Node extends UnicastRemoteObject implements IComponent {
         level = 0;
         this.links = new PriorityQueue<Link>(links);
         fragmentName = id;
-//        bestEdge = links.peek();
+        initializeMetrics();
+        cores = new HashMap<Double,Link>();
+        mstEdges = new HashMap<Double,Link>();
+        levels = new HashMap<Integer,List<Link>>();
     }
 
+    private void initializeMetrics(){
+		ConnectSent = new AtomicInteger(0);
+		TestSent = new AtomicInteger(0);
+		InitiateSent = new AtomicInteger(0);
+		ReportSent = new AtomicInteger(0);
+		AcceptSent = new AtomicInteger(0);
+		RejectSent = new AtomicInteger(0);
+		ChangeRootSent = new AtomicInteger(0);
+		ConnectReceived = new AtomicInteger(0);
+		TestReceived = new AtomicInteger(0);
+		InitiateReceived = new AtomicInteger(0);
+		ReportReceived = new AtomicInteger(0);
+		AcceptReceived = new AtomicInteger(0);
+		RejectReceived = new AtomicInteger(0);
+		ChangeRootReceived = new AtomicInteger(0);
+		merges = new AtomicInteger(0);
+		absorbs = new AtomicInteger(0);
+    }
+    
     @Override
     public void wakeUp() throws RemoteException {
         Link edge = links.peek();
         edge.setState(LinkState.IN_MST);
+        mstEdges.put(edge.getWeight(), edge);
         System.out.println(id + ":Wakeup");
 
         System.out.println(id + ": changing link to " + edge.getReceiver(id) + " to IN_MST");
@@ -52,6 +94,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         findCount = new AtomicInteger(0);
         Message msg = new Message(MessageType.CONNECT, 0);
         System.out.println(id + ":Sending Connect to " + edge.getReceiver(id));
+        ConnectSent.getAndIncrement();
         new java.util.Timer().schedule(
                 new java.util.TimerTask() {
                     @Override
@@ -81,24 +124,31 @@ public class Node extends UnicastRemoteObject implements IComponent {
         Link myLink = getMyLink(link);
         switch (message.getType()) {
             case TEST:
+            	TestReceived.getAndIncrement();
                 receiveTest(message, myLink);
                 break;
             case ACCEPT:
+            	AcceptReceived.getAndIncrement();
                 receiveAccept(message, myLink);
                 break;
             case CONNECT:
+            	ConnectReceived.getAndIncrement();
                 receiveConnect(message, myLink);
                 break;
             case INITIATE:
+            	InitiateReceived.getAndIncrement();
                 receiveInitiate(message, myLink);
                 break;
             case REPORT:
+            	ReportReceived.getAndIncrement();
                 receiveReport(message, myLink);
                 break;
             case REJECT:
+            	RejectReceived.getAndIncrement();
                 receiveReject(message, myLink);
                 break;
             case CHANGE_ROOT:
+            	ChangeRootReceived.getAndIncrement();
                 receiveChangeRoot(message, myLink);
                 break;
         }
@@ -144,7 +194,10 @@ public class Node extends UnicastRemoteObject implements IComponent {
         if (message.getLevel() < this.level) {
             System.out.println(id + ": changing link to " + link.getReceiver(id) + " to IN_MST");
             link.setState(LinkState.IN_MST);
+            mstEdges.put(link.getWeight(), link);
             Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
+            InitiateSent.getAndIncrement();
+            absorbs.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -176,7 +229,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                             public void run() {
                                 try {
                                     Thread.sleep(3000);
-                                    nodes[id].receive(message, link);
+                                    nodes[id].receiveConnect(message, link);
                                 } catch (RemoteException e) {
                                     e.printStackTrace();
                                 } catch (InterruptedException e) {
@@ -188,6 +241,16 @@ public class Node extends UnicastRemoteObject implements IComponent {
             } else {
                 // the merging case: l == l' and MOE == MOE'
                 Message msg = new Message(MessageType.INITIATE, level + 1, link.getWeight(), NodeState.FIND);
+                InitiateSent.getAndIncrement();
+                merges.getAndIncrement();
+                cores.put(link.getWeight(), link);
+                List<Link> tt;
+                if (levels.containsKey(level+1))
+                	tt = levels.get(level+1);
+                else
+                	tt = new ArrayList<Link>();
+                tt.add(link);
+                levels.put(level+1, tt);
                 System.out.println(id + ":Sending Initiate to " + link.getReceiver(id));
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
@@ -222,6 +285,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
             if (adjescentLink.compareTo(link) != 0 && adjescentLink.getState() == LinkState.IN_MST) {
                 Message msg = new Message(MessageType.INITIATE, level, fragmentName, state);
                 System.out.println(id + ": Sending Initiate to " + adjescentLink.getReceiver(id));
+                InitiateSent.getAndIncrement();
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
@@ -258,6 +322,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
 
             Message msg = new Message(MessageType.TEST, level, fragmentName);
             System.out.println(id + ":Sending Receive test to " + testEdge.getReceiver(id) + " fragment" + fragmentName);
+            TestSent.getAndIncrement();
             int reciverID = testEdge.getReceiver(id);
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
@@ -318,6 +383,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
             if (message.getfName() != fragmentName) {
                 Message msg = new Message(MessageType.ACCEPT);
                 System.out.println(id + "Sending Accept to " + link.getReceiver(id));
+                AcceptSent.getAndIncrement();
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
                             @Override
@@ -357,6 +423,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                                 public void run() {
                                     try {
                                         System.out.println(id + ":Sending Reject to " + link.getReceiver(id));
+                                        RejectSent.getAndIncrement();
                                         Message msg = new Message(MessageType.REJECT);
                                         Thread.sleep(100);
                                         nodes[link.getReceiver(id)].receive(msg, link);
@@ -405,6 +472,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
             this.state = NodeState.FOUND;
             Message msg = new Message(MessageType.REPORT, weightBestAdjacent);
             System.out.println(id + ":Sending Report to " + inBranch.getReceiver(id));
+            ReportSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -448,7 +516,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                             public void run() {
                                 try {
                                     Thread.sleep(5000);
-                                    nodes[id].receive(message, link);
+                                    nodes[id].receiveReport(message, link);
                                 } catch (RemoteException e) {
                                     e.printStackTrace();
                                 } catch (InterruptedException e) {
@@ -464,7 +532,51 @@ public class Node extends UnicastRemoteObject implements IComponent {
                     if (message.getWeight() == weightBestAdjacent &&
                             weightBestAdjacent == Double.POSITIVE_INFINITY) {
                         System.out.println(id + ":HAAAAAAAAAAAAAAAAAAAAAAAAAALT");
-                        // TODO: HALT
+                        Map<String,Integer> stats = null;
+                        Map<String,Integer> temp;
+                        int t;
+                        for (IComponent node:nodes){
+                        	if (node.getID()==id){
+                        		temp = getMetrics();
+                        	}
+                        	else{
+                        		temp = node.getMetrics();
+                        		for (Double w:node.getMST().keySet()){
+                        			if (!mstEdges.containsKey(w))
+                        				mstEdges.put(w, node.getMST().get(w));
+                        		}
+                        		for (Double w:node.getCores().keySet()){
+                        			if (!cores.containsKey(w))
+                        				cores.put(w, node.getCores().get(w));
+                        		}
+                        		for(int i:node.getLevels().keySet()){
+                        			if (!levels.containsKey(i)){
+                        				levels.put(i, node.getLevels().get(i));
+                        			}
+                        			else{
+                        				List<Link> tt;
+	                        			for (Link l:node.getLevels().get(i)){
+	                        				if (!levels.get(i).stream().anyMatch(p -> p.getWeight() == l.getWeight())){
+	                        					tt = levels.get(i);
+	                        					tt.add(l);
+	                        					levels.put(i, tt);
+	                        				}				
+	                        			}
+                        			}
+                        		}
+                        	}
+                        	if (stats==null)
+                        		stats = new HashMap<String,Integer>(temp);
+                        	else{
+                        		for (String k: stats.keySet()){
+                        			t = stats.get(k);
+                        			stats.put(k, t+temp.get(k));
+                        		}
+                        	}	
+                        }
+                        t = stats.get("merges");
+                        stats.put("merges", t/2);
+                        presentStats(stats);
                     }
                 }
             }
@@ -476,6 +588,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
 
         if (bestEdge.getState() == LinkState.IN_MST) {
             Message msg = new Message(MessageType.CHANGE_ROOT);
+            ChangeRootSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -498,6 +611,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
         } else {
             Message msg = new Message(MessageType.CONNECT, level);
             System.out.println(id + ":Sending connect message " + bestEdge.getReceiver(id));
+            ConnectSent.getAndIncrement();
             new java.util.Timer().schedule(
                     new java.util.TimerTask() {
                         @Override
@@ -518,6 +632,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
             );
             System.out.println(id + ": changing bestEdge to " + bestEdge.getReceiver(id) + " to IN_MST");
             bestEdge.setState(LinkState.IN_MST);
+            mstEdges.put(bestEdge.getWeight(), bestEdge);
 
         }
     }
@@ -540,7 +655,65 @@ public class Node extends UnicastRemoteObject implements IComponent {
 
 	@Override
 	public int getID() throws RemoteException {
-		// TODO Auto-generated method stub
 		return id;
+	}
+
+	@Override
+	public Map<String,Integer> getMetrics() throws RemoteException {
+		// TODO Auto-generated method stub
+		Map<String,Integer> stat = new HashMap<String, Integer>();
+		stat.put("ConnectSent", ConnectSent.get());
+		stat.put("InitiateSent", InitiateSent.get());
+		stat.put("AcceptSent", AcceptSent.get());
+		stat.put("RejectSent", RejectSent.get());
+		stat.put("TestSent", TestSent.get());
+		stat.put("ReportSent", ReportSent.get());
+		stat.put("ChangeRootSent", ChangeRootSent.get());
+		stat.put("ConnectReceived", ConnectReceived.get());
+		stat.put("InitiateReceived", InitiateReceived.get());
+		stat.put("AcceptReceived", AcceptReceived.get());
+		stat.put("RejectReceived", RejectReceived.get());
+		stat.put("TestReceived", TestReceived.get());
+		stat.put("ReportReceived", ReportReceived.get());
+		stat.put("ChangeRootReceived", ChangeRootReceived.get());
+		stat.put("merges", merges.get());
+		stat.put("absorbs", absorbs.get());
+		return stat;
+	}
+	
+	
+	private void presentStats(Map<String, Integer> stats){
+		for (String k:stats.keySet()){
+			System.out.println(k+": "+stats.get(k));
+		}
+		System.out.println("---------- MST ----------");
+		for (Double w:mstEdges.keySet()){
+			System.out.println("("+mstEdges.get(w).getFrom()+ " - "+mstEdges.get(w).getTo()+")");
+		}
+		System.out.println("---------- Core-Level Values ----------");
+		for (int l:levels.keySet()){
+			System.out.println("In level "+ l);
+			for (Link e: levels.get(l)){
+				System.out.println("("+e.getFrom()+ " - "+e.getTo()+")");
+			}
+		}
+	}
+
+	@Override
+	public Map<Double, Link> getCores() throws RemoteException {
+		// TODO Auto-generated method stub
+		return cores;
+	}
+
+	@Override
+	public Map<Double, Link> getMST() throws RemoteException {
+		// TODO Auto-generated method stub
+		return mstEdges;
+	}
+
+	@Override
+	public Map<Integer, List<Link>> getLevels() throws RemoteException {
+		// TODO Auto-generated method stub
+		return levels;
 	}
 }
