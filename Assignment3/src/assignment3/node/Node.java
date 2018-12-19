@@ -516,4 +516,9 @@ public class Node extends UnicastRemoteObject implements IComponent {
     public void setEntities(IComponent[] entities) throws RemoteException {
         nodes = entities;
     }
+    
+    @Override
+    public void isAlive() throws RemoteException{
+    	System.out.println("Node "+ id+ " is up");
+    }
 }

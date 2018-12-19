@@ -14,6 +14,7 @@ public interface IComponent extends Remote {
 	public void receiveReport(Message message, Link link) throws RemoteException ;
 	public void receiveChangeRoot(Message message, Link link) throws RemoteException ;
 	public void setEntities(IComponent[] entities) throws RemoteException ;
-	public void wakeUp() throws RemoteException ;
+	public void wakeUp() throws RemoteException;
+	public void isAlive() throws RemoteException;
 	
 }

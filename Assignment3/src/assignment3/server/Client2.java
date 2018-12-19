@@ -2,6 +2,7 @@ package assignment3.server;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -25,7 +26,7 @@ public class Client2 {
     public static void main(String[] args) throws AlreadyBoundException, NotBoundException, IOException, InterruptedException {
     	
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/nodes.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/nodes1.txt"));
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
@@ -45,9 +46,9 @@ public class Client2 {
         	i++;
         }
         br.close();
-        System.out.println("Press enter to continue");
-        Scanner scan = new Scanner(System.in);
-        scan.nextLine();
+        //System.out.println("Press enter to continue");
+        //Scanner scan = new Scanner(System.in);
+        //scan.nextLine();
         setRegistry();
         System.out.println("Client 2 started");
     }
@@ -57,7 +58,8 @@ public class Client2 {
     	Registry registry = null;
 		while (!success){
     		try{
-    			registry = LocateRegistry.getRegistry("145.94.186.211", Constant.RMI_PORT);
+    			registry = LocateRegistry.getRegistry("145.94.184.129", Constant.RMI_PORT);
+    			System.out.println("registry is up");
     			success = true;
     		}
     		catch (RemoteException e) {
@@ -68,7 +70,18 @@ public class Client2 {
         RMI_IDS = new IComponent[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[numProc]; // and numProc number of threads are created
         for(int i=0; i<numProc; i++){
-            RMI_IDS[i] = (IComponent) registry.lookup(registry.list()[i]);
+        	success = false;
+        	while(!success){
+	        	try{
+	        		RMI_IDS[i] = (IComponent) registry.lookup(registry.list()[i]);
+	        		success = true;
+	        		System.out.println("process " + i + " found");
+	        	}
+	        	catch(Exception e){
+	        		//e.printStackTrace();
+	        		System.err.println("Waiting for client 1...");
+	        	}
+        	}
         }
         
         for(int i=0; i<localProc; i++){
@@ -78,9 +91,10 @@ public class Client2 {
             myThreads[i] = new Thread(p); // and a new thread is created 
         }
         
-        System.out.println("Press enter to continue");
-        Scanner scan = new Scanner(System.in);
-        scan.nextLine();
-        for (int i = 0; i < localProc; i+=2) myThreads[i].start();
+        //System.out.println("Press enter to continue");
+        //Scanner scan = new Scanner(System.in);
+        //scan.nextLine();
+        //for (int i = 0; i < localProc; i+=2) myThreads[i].start();
+        while(true){}
     }
 }
