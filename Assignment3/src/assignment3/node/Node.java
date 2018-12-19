@@ -537,4 +537,10 @@ public class Node extends UnicastRemoteObject implements IComponent {
     public IComponent[] getEntities() throws RemoteException{
     	return nodes;
     }
+
+	@Override
+	public int getID() throws RemoteException {
+		// TODO Auto-generated method stub
+		return id;
+	}
 }

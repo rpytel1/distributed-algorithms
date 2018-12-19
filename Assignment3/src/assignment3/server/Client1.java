@@ -32,6 +32,12 @@ public class Client1 {
     	Registry registry = LocateRegistry.createRegistry(Constant.RMI_PORT);
     	links = new HashMap<Integer, List<Link>>();
     	initializeEdges();
+    	for(int k: links.keySet()){
+    		System.out.println("Node " + k + " has edges");
+    		for (Link l: links.get(k)){
+    			System.out.println("from "+l.getFrom()+ " to " + l.getTo()+ " with weight " +l.getWeight());
+    		}
+    	}
         // "clients" files contain the name of the remote processes used
         BufferedReader br = new BufferedReader(new FileReader("tests/nodes_cr4.txt"));
         String line = br.readLine();
@@ -68,6 +74,9 @@ public class Client1 {
         	i++;
         }
         br.close();
+        for (int id:localIDS){
+        	System.out.println("Local id "+ id);
+        }
         setRegistry();
         System.out.println("Client 1 started");
     }
@@ -112,7 +121,7 @@ public class Client1 {
     public static void setRegistry() throws NotBoundException, NumberFormatException, IOException, InterruptedException {
     	Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
         RMI_IDS = new IComponent[numProc]; // the remote process array is instantiated
-        Thread[] myThreads = new Thread[numProc]; // and numProc number of threads are created
+        Thread[] myThreads = new Thread[localProc]; // and numProc number of threads are created
         boolean success;
         for(int i=0; i<numProc; i++){
         	success = false;
@@ -130,6 +139,7 @@ public class Client1 {
         
         for(int i=0; i<localProc; i++){
         	// initialization of each remote process of the client
+        	System.out.println("Process wiht id "+ localIDS.get(i)+ " is initialized");
             RMI_IDS[localIDS.get(i)].setEntities(RMI_IDS);
             // a new runnable remote process is created and is binded with the process i
             RemoteProcess p = new RemoteProcess(RMI_IDS[localIDS.get(i)]);
@@ -139,6 +149,10 @@ public class Client1 {
         for (int i=0; i<numProc; i++){
 	        while(RMI_IDS[i].getEntities()==null){
 	        	System.err.println("Node "+i+" not initialized yet");
+	        }
+	        System.out.println("Node " + i + " has array");
+	        for (IComponent temp: RMI_IDS[i].getEntities()){
+	        	System.out.println(temp.getID());
 	        }
 	    }
         System.out.println("Tap when you are ready");

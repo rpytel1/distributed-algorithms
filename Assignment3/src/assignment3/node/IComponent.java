@@ -16,5 +16,5 @@ public interface IComponent extends Remote {
 	public void setEntities(IComponent[] entities) throws RemoteException ;
 	public void wakeUp() throws RemoteException;
 	public IComponent[] getEntities() throws RemoteException;
-	
+	public int getID() throws RemoteException;
 }
