@@ -33,7 +33,7 @@ public class Client1 {
     	links = new HashMap<Integer, List<Link>>();
     	initializeEdges();
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/nodes1.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/nodes_cr4.txt"));
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
@@ -68,15 +68,12 @@ public class Client1 {
         	i++;
         }
         br.close();
-        //System.out.println("Press enter to continue");
-        //Scanner scan = new Scanner(System.in);
-        //scan.nextLine();
         setRegistry();
         System.out.println("Client 1 started");
     }
     
     public static void initializeEdges() throws IOException{
-    	BufferedReader br = new BufferedReader(new FileReader("tests/edges1.txt"));
+    	BufferedReader br = new BufferedReader(new FileReader("tests/edgescr4.txt"));
         String line;
         int node1;
         int node2;
@@ -112,7 +109,7 @@ public class Client1 {
         br.close();
     }
 
-    public static void setRegistry() throws NotBoundException, NumberFormatException, IOException{
+    public static void setRegistry() throws NotBoundException, NumberFormatException, IOException, InterruptedException {
     	Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
         RMI_IDS = new IComponent[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[numProc]; // and numProc number of threads are created
@@ -138,15 +135,14 @@ public class Client1 {
             RemoteProcess p = new RemoteProcess(RMI_IDS[localIDS.get(i)]);
             myThreads[i] = new Thread(p); // and a new thread is created 
         }
-        
-        //System.out.println("Press enter to continue");
-        //Scanner scan = new Scanner(System.in);
-        //scan.nextLine();
+
         for (int i=0; i<numProc; i++){
 	        while(RMI_IDS[i].getEntities()==null){
 	        	System.err.println("Node "+i+" not initialized yet");
 	        }
 	    }
+        System.out.println("Tap when you are ready");
+        System.in.read();
         myThreads[0].start();
     }
 }
