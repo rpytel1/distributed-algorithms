@@ -2,6 +2,7 @@ package assignment3.server;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.rmi.AccessException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -32,7 +33,7 @@ public class Client1 {
     	links = new HashMap<Integer, List<Link>>();
     	initializeEdges();
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/nodes1.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/nodes_cr4.txt"));
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
@@ -52,10 +53,12 @@ public class Client1 {
         		boolean success = false;
         		while (!success){
 	        		try{
+	        			System.out.println("Waaaait!");
 	        			registry.bind("//145.94.234.109:"+Constant.RMI_PORT+"/"+split_line[0], new Node(i, new PriorityQueue<Link>(links.get(i))));
 	        			success = true;
 	        		}
-	        		catch (RemoteException e) {
+	        		catch (AccessException e) {
+	        			System.out.println("Faaaailed");
 	                    e.printStackTrace();
 	                }
         		}
@@ -70,7 +73,7 @@ public class Client1 {
     }
     
     public static void initializeEdges() throws IOException{
-    	BufferedReader br = new BufferedReader(new FileReader("tests/edges1.txt"));
+    	BufferedReader br = new BufferedReader(new FileReader("tests/edgescr4.txt"));
         String line;
         int node1;
         int node2;
@@ -106,7 +109,7 @@ public class Client1 {
         br.close();
     }
 
-    public static void setRegistry() throws NotBoundException, NumberFormatException, IOException{
+    public static void setRegistry() throws NotBoundException, NumberFormatException, IOException, InterruptedException {
     	Registry registry = LocateRegistry.getRegistry("localhost", Constant.RMI_PORT);
         RMI_IDS = new IComponent[numProc]; // the remote process array is instantiated
         Thread[] myThreads = new Thread[numProc]; // and numProc number of threads are created
@@ -121,8 +124,10 @@ public class Client1 {
             RemoteProcess p = new RemoteProcess(RMI_IDS[localIDS.get(i)]);
             myThreads[i] = new Thread(p); // and a new thread is created 
         }
-
+        System.out.println("Tap when you are ready");
+        System.in.read();
         myThreads[0].start();
 		myThreads[1].start();
-    }
+
+	}
 }

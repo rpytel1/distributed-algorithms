@@ -69,7 +69,7 @@ public class Link implements Serializable, Comparable{
         this.delay = delay;
     }
     
-    public int getReceiver(int id) {
+    public synchronized int getReceiver(int id) {
         if (id == this.to)
         	return this.from;
         return this.to;
