@@ -127,7 +127,8 @@ public class Client1 {
         	success = false;
         	while(!success){
         		try{
-        			RMI_IDS[i] = (IComponent) registry.lookup(registry.list()[i]);
+        			IComponent element = (IComponent) registry.lookup(registry.list()[i]);
+                    RMI_IDS[element.getID()] = element;
         			success = true;
         			System.out.println("process " + i + " found in the registry");
         		}
@@ -148,6 +149,7 @@ public class Client1 {
 
         for (int i=0; i<numProc; i++){
 	        while(RMI_IDS[i].getEntities()==null){
+	            Thread.sleep(1000);
 	        	System.err.println("Node "+i+" not initialized yet");
 	        }
 	        System.out.println("Node " + i + " has array");

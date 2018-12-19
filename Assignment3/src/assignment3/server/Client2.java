@@ -73,7 +73,8 @@ public class Client2 {
         	success = false;
         	while(!success){
 	        	try{
-	        		RMI_IDS[i] = (IComponent) registry.lookup(registry.list()[i]);
+					IComponent element = (IComponent) registry.lookup(registry.list()[i]);
+					RMI_IDS[element.getID()] = element;
 	        		success = true;
 	        		System.out.println("process " + i + " found");
 	        	}
