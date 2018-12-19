@@ -39,7 +39,7 @@ public class Client1 {
     		}
     	}
         // "clients" files contain the name of the remote processes used
-        BufferedReader br = new BufferedReader(new FileReader("tests/nodes_cr4.txt"));
+        BufferedReader br = new BufferedReader(new FileReader("tests/nodes_cr4v2.txt"));
         String line = br.readLine();
         numProc = Integer.parseInt(line);
         localProc = 0;
@@ -82,7 +82,7 @@ public class Client1 {
     }
     
     public static void initializeEdges() throws IOException{
-    	BufferedReader br = new BufferedReader(new FileReader("tests/edgescr4.txt"));
+    	BufferedReader br = new BufferedReader(new FileReader("tests/edgescr4v2.txt"));
         String line;
         int node1;
         int node2;
@@ -160,5 +160,7 @@ public class Client1 {
         System.out.println("Tap when you are ready");
         System.in.read();
         myThreads[0].start();
-    }
+		myThreads[2].start();
+
+	}
 }

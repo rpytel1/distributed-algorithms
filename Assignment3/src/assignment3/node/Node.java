@@ -10,6 +10,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -45,9 +46,11 @@ public class Node extends UnicastRemoteObject implements IComponent {
     public AtomicInteger ChangeRootReceived;
     public AtomicInteger merges;
     public AtomicInteger absorbs;
-    public Map<Double,Link> cores;
-    public Map<Double,Link> mstEdges;
-    public Map<Integer,List<Link>> levels;
+    public Map<Double, Link> cores;
+    public Map<Double, Link> mstEdges;
+    public Map<Integer, List<Link>> levels;
+
+    private AtomicBoolean wasAlreadyReported = new AtomicBoolean(false);
 
     public Node(int id, Queue<Link> links) throws RemoteException {
         super();
@@ -57,30 +60,30 @@ public class Node extends UnicastRemoteObject implements IComponent {
         this.links = new PriorityQueue<Link>(links);
         fragmentName = id;
         initializeMetrics();
-        cores = new HashMap<Double,Link>();
-        mstEdges = new HashMap<Double,Link>();
-        levels = new HashMap<Integer,List<Link>>();
+        cores = new HashMap<Double, Link>();
+        mstEdges = new HashMap<Double, Link>();
+        levels = new HashMap<Integer, List<Link>>();
     }
 
-    private void initializeMetrics(){
-		ConnectSent = new AtomicInteger(0);
-		TestSent = new AtomicInteger(0);
-		InitiateSent = new AtomicInteger(0);
-		ReportSent = new AtomicInteger(0);
-		AcceptSent = new AtomicInteger(0);
-		RejectSent = new AtomicInteger(0);
-		ChangeRootSent = new AtomicInteger(0);
-		ConnectReceived = new AtomicInteger(0);
-		TestReceived = new AtomicInteger(0);
-		InitiateReceived = new AtomicInteger(0);
-		ReportReceived = new AtomicInteger(0);
-		AcceptReceived = new AtomicInteger(0);
-		RejectReceived = new AtomicInteger(0);
-		ChangeRootReceived = new AtomicInteger(0);
-		merges = new AtomicInteger(0);
-		absorbs = new AtomicInteger(0);
+    private void initializeMetrics() {
+        ConnectSent = new AtomicInteger(0);
+        TestSent = new AtomicInteger(0);
+        InitiateSent = new AtomicInteger(0);
+        ReportSent = new AtomicInteger(0);
+        AcceptSent = new AtomicInteger(0);
+        RejectSent = new AtomicInteger(0);
+        ChangeRootSent = new AtomicInteger(0);
+        ConnectReceived = new AtomicInteger(0);
+        TestReceived = new AtomicInteger(0);
+        InitiateReceived = new AtomicInteger(0);
+        ReportReceived = new AtomicInteger(0);
+        AcceptReceived = new AtomicInteger(0);
+        RejectReceived = new AtomicInteger(0);
+        ChangeRootReceived = new AtomicInteger(0);
+        merges = new AtomicInteger(0);
+        absorbs = new AtomicInteger(0);
     }
-    
+
     @Override
     public void wakeUp() throws RemoteException {
         Link edge = links.peek();
@@ -117,38 +120,38 @@ public class Node extends UnicastRemoteObject implements IComponent {
     @Override
     public synchronized void receive(Message message, Link link) throws RemoteException {
         try {
-            Thread.sleep((long)(new Random().nextDouble()*10));
+            Thread.sleep((long) (new Random().nextDouble() * 10));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         Link myLink = getMyLink(link);
         switch (message.getType()) {
             case TEST:
-            	TestReceived.getAndIncrement();
+                TestReceived.getAndIncrement();
                 receiveTest(message, myLink);
                 break;
             case ACCEPT:
-            	AcceptReceived.getAndIncrement();
+                AcceptReceived.getAndIncrement();
                 receiveAccept(message, myLink);
                 break;
             case CONNECT:
-            	ConnectReceived.getAndIncrement();
+                ConnectReceived.getAndIncrement();
                 receiveConnect(message, myLink);
                 break;
             case INITIATE:
-            	InitiateReceived.getAndIncrement();
+                InitiateReceived.getAndIncrement();
                 receiveInitiate(message, myLink);
                 break;
             case REPORT:
-            	ReportReceived.getAndIncrement();
+                ReportReceived.getAndIncrement();
                 receiveReport(message, myLink);
                 break;
             case REJECT:
-            	RejectReceived.getAndIncrement();
+                RejectReceived.getAndIncrement();
                 receiveReject(message, myLink);
                 break;
             case CHANGE_ROOT:
-            	ChangeRootReceived.getAndIncrement();
+                ChangeRootReceived.getAndIncrement();
                 receiveChangeRoot(message, myLink);
                 break;
         }
@@ -245,12 +248,12 @@ public class Node extends UnicastRemoteObject implements IComponent {
                 merges.getAndIncrement();
                 cores.put(link.getWeight(), link);
                 List<Link> tt;
-                if (levels.containsKey(level+1))
-                	tt = levels.get(level+1);
+                if (levels.containsKey(level + 1))
+                    tt = levels.get(level + 1);
                 else
-                	tt = new ArrayList<Link>();
+                    tt = new ArrayList<Link>();
                 tt.add(link);
-                levels.put(level+1, tt);
+                levels.put(level + 1, tt);
                 System.out.println(id + ":Sending Initiate to " + link.getReceiver(id));
                 new java.util.Timer().schedule(
                         new java.util.TimerTask() {
@@ -510,21 +513,30 @@ public class Node extends UnicastRemoteObject implements IComponent {
         } else {
             if (this.state == NodeState.FIND) {
                 System.out.println("Adding report to the queue");
-                new java.util.Timer().schedule(
-                        new java.util.TimerTask() {
-                            @Override
-                            public void run() {
-                                try {
-                                    Thread.sleep(5000);
-                                    nodes[id].receiveReport(message, link);
-                                } catch (RemoteException e) {
-                                    e.printStackTrace();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
+                if(!wasAlreadyReported.get()) {
+                    new java.util.Timer().schedule(
+                            new java.util.TimerTask() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        Thread.sleep(5000);
+                                        nodes[id].receiveReport(message, link);
+                                    } catch (RemoteException e) {
+                                        e.printStackTrace();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                            }
-                        },
-                        0);
+                            },
+                            0);
+                }
+                if (wasAlreadyReported.get()) {
+                    printStats();
+                }
+                if (findCount.get() < 2) {
+                    wasAlreadyReported.set(true);
+                }
+
             } else {
                 if (message.getWeight() > weightBestAdjacent)
                     changeRoot();
@@ -532,51 +544,7 @@ public class Node extends UnicastRemoteObject implements IComponent {
                     if (message.getWeight() == weightBestAdjacent &&
                             weightBestAdjacent == Double.POSITIVE_INFINITY) {
                         System.out.println(id + ":HAAAAAAAAAAAAAAAAAAAAAAAAAALT");
-                        Map<String,Integer> stats = null;
-                        Map<String,Integer> temp;
-                        int t;
-                        for (IComponent node:nodes){
-                        	if (node.getID()==id){
-                        		temp = getMetrics();
-                        	}
-                        	else{
-                        		temp = node.getMetrics();
-                        		for (Double w:node.getMST().keySet()){
-                        			if (!mstEdges.containsKey(w))
-                        				mstEdges.put(w, node.getMST().get(w));
-                        		}
-                        		for (Double w:node.getCores().keySet()){
-                        			if (!cores.containsKey(w))
-                        				cores.put(w, node.getCores().get(w));
-                        		}
-                        		for(int i:node.getLevels().keySet()){
-                        			if (!levels.containsKey(i)){
-                        				levels.put(i, node.getLevels().get(i));
-                        			}
-                        			else{
-                        				List<Link> tt;
-	                        			for (Link l:node.getLevels().get(i)){
-	                        				if (!levels.get(i).stream().anyMatch(p -> p.getWeight() == l.getWeight())){
-	                        					tt = levels.get(i);
-	                        					tt.add(l);
-	                        					levels.put(i, tt);
-	                        				}				
-	                        			}
-                        			}
-                        		}
-                        	}
-                        	if (stats==null)
-                        		stats = new HashMap<String,Integer>(temp);
-                        	else{
-                        		for (String k: stats.keySet()){
-                        			t = stats.get(k);
-                        			stats.put(k, t+temp.get(k));
-                        		}
-                        	}	
-                        }
-                        t = stats.get("merges");
-                        stats.put("merges", t/2);
-                        presentStats(stats);
+                        printStats();
                     }
                 }
             }
@@ -647,73 +615,119 @@ public class Node extends UnicastRemoteObject implements IComponent {
     public void setEntities(IComponent[] entities) throws RemoteException {
         nodes = entities;
     }
-    
+
     @Override
-    public IComponent[] getEntities() throws RemoteException{
-    	return nodes;
+    public IComponent[] getEntities() throws RemoteException {
+        return nodes;
     }
 
-	@Override
-	public int getID() throws RemoteException {
-		return id;
-	}
+    @Override
+    public int getID() throws RemoteException {
+        return id;
+    }
 
-	@Override
-	public Map<String,Integer> getMetrics() throws RemoteException {
-		// TODO Auto-generated method stub
-		Map<String,Integer> stat = new HashMap<String, Integer>();
-		stat.put("ConnectSent", ConnectSent.get());
-		stat.put("InitiateSent", InitiateSent.get());
-		stat.put("AcceptSent", AcceptSent.get());
-		stat.put("RejectSent", RejectSent.get());
-		stat.put("TestSent", TestSent.get());
-		stat.put("ReportSent", ReportSent.get());
-		stat.put("ChangeRootSent", ChangeRootSent.get());
-		stat.put("ConnectReceived", ConnectReceived.get());
-		stat.put("InitiateReceived", InitiateReceived.get());
-		stat.put("AcceptReceived", AcceptReceived.get());
-		stat.put("RejectReceived", RejectReceived.get());
-		stat.put("TestReceived", TestReceived.get());
-		stat.put("ReportReceived", ReportReceived.get());
-		stat.put("ChangeRootReceived", ChangeRootReceived.get());
-		stat.put("merges", merges.get());
-		stat.put("absorbs", absorbs.get());
-		return stat;
-	}
-	
-	
-	private void presentStats(Map<String, Integer> stats){
-		for (String k:stats.keySet()){
-			System.out.println(k+": "+stats.get(k));
-		}
-		System.out.println("---------- MST ----------");
-		for (Double w:mstEdges.keySet()){
-			System.out.println("("+mstEdges.get(w).getFrom()+ " - "+mstEdges.get(w).getTo()+")");
-		}
-		System.out.println("---------- Core-Level Values ----------");
-		for (int l:levels.keySet()){
-			System.out.println("In level "+ l);
-			for (Link e: levels.get(l)){
-				System.out.println("("+e.getFrom()+ " - "+e.getTo()+")");
-			}
-		}
-	}
+    @Override
+    public Map<String, Integer> getMetrics() throws RemoteException {
+        // TODO Auto-generated method stub
+        Map<String, Integer> stat = new HashMap<String, Integer>();
+        stat.put("ConnectSent", ConnectSent.get());
+        stat.put("InitiateSent", InitiateSent.get());
+        stat.put("AcceptSent", AcceptSent.get());
+        stat.put("RejectSent", RejectSent.get());
+        stat.put("TestSent", TestSent.get());
+        stat.put("ReportSent", ReportSent.get());
+        stat.put("ChangeRootSent", ChangeRootSent.get());
+        stat.put("ConnectReceived", ConnectReceived.get());
+        stat.put("InitiateReceived", InitiateReceived.get());
+        stat.put("AcceptReceived", AcceptReceived.get());
+        stat.put("RejectReceived", RejectReceived.get());
+        stat.put("TestReceived", TestReceived.get());
+        stat.put("ReportReceived", ReportReceived.get());
+        stat.put("ChangeRootReceived", ChangeRootReceived.get());
+        stat.put("merges", merges.get());
+        stat.put("absorbs", absorbs.get());
+        return stat;
+    }
 
-	@Override
-	public Map<Double, Link> getCores() throws RemoteException {
-		// TODO Auto-generated method stub
-		return cores;
-	}
 
-	@Override
-	public Map<Double, Link> getMST() throws RemoteException {
-		// TODO Auto-generated method stub
-		return mstEdges;
-	}
+    private void presentStats(Map<String, Integer> stats) {
+        for (String k : stats.keySet()) {
+            System.out.println(k + ": " + stats.get(k));
+        }
+        System.out.println("---------- MST ----------");
+        for (Double w : mstEdges.keySet()) {
+            System.out.println("(" + mstEdges.get(w).getFrom() + " - " + mstEdges.get(w).getTo() + ")");
+        }
+        System.out.println("---------- Core-Level Values ----------");
+        for (int l : levels.keySet()) {
+            System.out.println("In level " + l);
+            for (Link e : levels.get(l)) {
+                System.out.println("(" + e.getFrom() + " - " + e.getTo() + ")");
+            }
+        }
+    }
 
-	@Override
-	public Map<Integer, List<Link>> getLevels() throws RemoteException {
-		// TODO Auto-generated method stub
-		return levels;
-	}
+    @Override
+    public Map<Double, Link> getCores() throws RemoteException {
+        // TODO Auto-generated method stub
+        return cores;
+    }
+
+    @Override
+    public Map<Double, Link> getMST() throws RemoteException {
+        // TODO Auto-generated method stub
+        return mstEdges;
+    }
+
+    @Override
+    public Map<Integer, List<Link>> getLevels() throws RemoteException {
+        // TODO Auto-generated method stub
+        return levels;
+    }
+
+    public void printStats() throws RemoteException {
+        Map<String, Integer> stats = null;
+        Map<String, Integer> temp;
+        int t;
+        for (IComponent node : nodes) {
+            if (node.getID() == id) {
+                temp = getMetrics();
+            } else {
+                temp = node.getMetrics();
+                for (Double w : node.getMST().keySet()) {
+                    if (!mstEdges.containsKey(w))
+                        mstEdges.put(w, node.getMST().get(w));
+                }
+                for (Double w : node.getCores().keySet()) {
+                    if (!cores.containsKey(w))
+                        cores.put(w, node.getCores().get(w));
+                }
+                for (int i : node.getLevels().keySet()) {
+                    if (!levels.containsKey(i)) {
+                        levels.put(i, node.getLevels().get(i));
+                    } else {
+                        List<Link> tt;
+                        for (Link l : node.getLevels().get(i)) {
+                            if (!levels.get(i).stream().anyMatch(p -> p.getWeight() == l.getWeight())) {
+                                tt = levels.get(i);
+                                tt.add(l);
+                                levels.put(i, tt);
+                            }
+                        }
+                    }
+                }
+            }
+            if (stats == null)
+                stats = new HashMap<String, Integer>(temp);
+            else {
+                for (String k : stats.keySet()) {
+                    t = stats.get(k);
+                    stats.put(k, t + temp.get(k));
+                }
+            }
+        }
+        t = stats.get("merges");
+        stats.put("merges", t / 2);
+        presentStats(stats);
+    }
 }
